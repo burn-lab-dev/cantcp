@@ -160,7 +160,13 @@ elif start_server; then
 	(timeout 20 "$root/bin/cantcp-cli" listen --json --count "$matrix_len" \
 		>"$work/listen.json" 2>"$work/listen.err" &)
 	sleep 2
-	"$root/bin/cantcp-cli" send --input "$matrix" >/dev/null 2>&1
+	# Send one frame at a time with a small gap: an instantaneous burst of
+	# frames overruns the vcan buffers on slow CI runners (a real CAN bus at
+	# 125k..1M cannot produce such rates either).
+	while IFS= read -r frame_line; do
+		printf '%s\n' "$frame_line" | "$root/bin/cantcp-cli" send --input - >/dev/null 2>&1
+		sleep 0.01
+	done <"$matrix"
 	sleep 2
 	pkill -x candump 2>/dev/null
 	seen=$(wc -l <"$work/listen.json" 2>/dev/null || echo 0)

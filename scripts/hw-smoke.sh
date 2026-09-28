@@ -116,7 +116,10 @@ if start_server; then
 	(timeout 30 candump "$iface_b" >"$work/candump.log" 2>&1 &)
 	(timeout 30 "$root/bin/cantcp-cli" listen --json --count "$matrix_len" >"$work/listen.json" 2>&1 &)
 	sleep 2
-	"$root/bin/cantcp-cli" send --input "$matrix" >/dev/null 2>&1
+	while IFS= read -r frame_line; do
+		printf '%s\n' "$frame_line" | "$root/bin/cantcp-cli" send --input - >/dev/null 2>&1
+		sleep 0.02
+	done <"$matrix"
 	sleep 3
 	pkill -x candump 2>/dev/null
 	seen=$(wc -l <"$work/listen.json" 2>/dev/null || echo 0)
