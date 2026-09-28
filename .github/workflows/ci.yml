@@ -74,6 +74,25 @@ jobs:
       - name: Build the .deb packages
         run: make deb VERSION=v0.0.0
 
+  canon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Download the codec module
+        run: go mod download github.com/burn-lab-dev/cantcp-lib-go
+      - name: Compare the codec vectors with the canon
+        run: |
+          module_dir=$(go list -m -f '{{.Dir}}' github.com/burn-lab-dev/cantcp-lib-go)
+          expected=$(curl -fsSL https://raw.githubusercontent.com/burn-lab-dev/cantcp-spec/main/vectors.sha256 | cut -d' ' -f1)
+          actual=$(sha256sum "$module_dir/testdata/vectors.json" | cut -d' ' -f1)
+          echo "canon: $expected"
+          echo "codec: $actual"
+          test "$expected" = "$actual"
+
   vuln:
     runs-on: ubuntu-latest
     steps:
