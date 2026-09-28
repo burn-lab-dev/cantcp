@@ -20,6 +20,7 @@ const (
 	canRAW          = 1          // CAN_RAW
 	solCANRaw       = 101        // SOL_CAN_RAW
 	canRawErrFilter = 2          // CAN_RAW_ERR_FILTER
+	canRawFDFrames  = 5          // CAN_RAW_FD_FRAMES
 	canErrMask      = 0x1FFFFFFF // CAN_ERR_MASK
 )
 
@@ -61,6 +62,13 @@ func Open(iface string, errorFrames bool) (*Bus, error) {
 			_ = syscall.Close(fd)
 			return nil, fmt.Errorf("socketcan: enable error frames on %s: %w", iface, err)
 		}
+	}
+	// A raw socket rejects 72-byte CAN FD frames with EINVAL until
+	// CAN_RAW_FD_FRAMES is set. Classic frames keep working on both classic
+	// and FD interfaces.
+	if err := syscall.SetsockoptInt(fd, solCANRaw, canRawFDFrames, 1); err != nil {
+		_ = syscall.Close(fd)
+		return nil, fmt.Errorf("socketcan: enable CAN FD on %s: %w", iface, err)
 	}
 	if err := bindCAN(fd, ifi.Index); err != nil {
 		_ = syscall.Close(fd)

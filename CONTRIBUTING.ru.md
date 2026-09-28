@@ -34,6 +34,7 @@ make deb       # .deb-пакеты (нужен dpkg-deb)
 ```sh
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72     # тесту CAN FD нужен MTU 72
 sudo ip link set up vcan0
 go test ./internal/e2e/
 ```

@@ -39,14 +39,27 @@ jobs:
         with:
           go-version: "1.26.x"
           cache: true
-      - name: Load the vcan module
-        run: sudo modprobe vcan
-      - name: Create vcan0
+      - name: Enable vcan0
         run: |
-          sudo ip link add dev vcan0 type vcan
-          sudo ip link set up vcan0
+          if ! sudo modprobe vcan 2>/dev/null; then
+            # Some runners (for example Azure kernels) ship the module in the
+            # extra package.
+            sudo apt-get update
+            sudo apt-get install -y "linux-modules-extra-$(uname -r)" || true
+          fi
+          if sudo modprobe vcan; then
+            sudo ip link add dev vcan0 type vcan
+            # MTU 72 enables CAN FD on the virtual bus.
+            sudo ip link set vcan0 mtu 72
+            sudo ip link set up vcan0
+            echo "vcan0 is up: the socketcan and e2e tests will run"
+          else
+            echo "::warning::vcan is not available on this runner; the socketcan and e2e tests will be skipped"
+          fi
       - name: go test -race with vcan0 (socketcan and end-to-end tests)
-        run: go test -race ./...
+        # The socketcan and e2e packages share vcan0: run the packages
+        # sequentially so the tests do not see each other's frames.
+        run: go test -race -p 1 ./...
 
   cross:
     runs-on: ubuntu-latest

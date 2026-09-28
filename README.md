@@ -67,7 +67,9 @@ go install github.com/burn-lab-dev/cantcp/cmd/cantcp-cli@latest
 ```sh
 # On the gateway machine: a real can0 interface, or a virtual one for tests.
 sudo modprobe vcan
-sudo ip link add dev vcan0 type vcan && sudo ip link set up vcan0
+sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72      # optional: enables CAN FD frames
+sudo ip link set up vcan0
 
 # Start the daemon on the loopback interface.
 cantcpd --can vcan0

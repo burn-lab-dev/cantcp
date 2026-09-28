@@ -138,6 +138,7 @@ sudo ip link set can0 up type can bitrate 500000
 # Virtual bus: tests without a device.
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72     # CAN FD (classic CAN uses MTU 16)
 sudo ip link set up vcan0
 ```
 

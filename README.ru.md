@@ -69,7 +69,9 @@ go install github.com/burn-lab-dev/cantcp/cmd/cantcp-cli@latest
 ```sh
 # На машине-шлюзе: реальный can0 или виртуальная шина для проверки.
 sudo modprobe vcan
-sudo ip link add dev vcan0 type vcan && sudo ip link set up vcan0
+sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72      # опционально: включает кадры CAN FD
+sudo ip link set up vcan0
 
 # Демон на loopback.
 cantcpd --can vcan0
