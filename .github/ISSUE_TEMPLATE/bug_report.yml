@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a bug in cantcpd or cantcp-cli
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report.
+        Please redact keys, addresses and CAN payloads before pasting logs.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - cantcpd (daemon)
+        - cantcp-cli (client)
+        - packaging (.deb, systemd)
+        - documentation
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `cantcpd --version` or `cantcp-cli --version`
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what happened and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and version, CPU architecture, CAN adapter / vcan setup, TLS or plain mode.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: shell
+    validations:
+      required: false

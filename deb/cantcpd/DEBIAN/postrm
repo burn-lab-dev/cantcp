@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if [ -d /run/systemd/system ]; then
+	systemctl daemon-reload || true
+	case "$1" in
+	purge)
+		deb-systemd-helper purge cantcpd.service >/dev/null || true
+		;;
+	remove)
+		deb-systemd-helper mask cantcpd.service >/dev/null || true
+		;;
+	esac
+fi
+
+exit 0

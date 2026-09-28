@@ -1,0 +1,15 @@
+{
+  "server": "can-gateway.example:29536",
+  "stats_server": "http://can-gateway.example:29537",
+  "tls": {
+    "enable": true,
+    "ca_file": "/etc/cantcp/tls/ca.pem",
+    "cert_file": "/etc/cantcp/tls/client.pem",
+    "key_file": "/etc/cantcp/tls/client-key.pem",
+    "server_name": "can-gateway.example"
+  },
+  "log": {
+    "level": "warn",
+    "format": "text"
+  }
+}

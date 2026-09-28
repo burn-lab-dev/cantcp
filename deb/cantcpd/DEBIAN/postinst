@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+
+# The daemon runs as the system user cantcp with CAP_NET_RAW only.
+if ! getent group cantcp >/dev/null 2>&1; then
+	addgroup --system cantcp
+fi
+if ! getent passwd cantcp >/dev/null 2>&1; then
+	adduser --system --ingroup cantcp --home /nonexistent --no-create-home \
+		--disabled-login --gecos "cantcp gateway" cantcp
+fi
+
+if [ -d /run/systemd/system ]; then
+	systemctl daemon-reload || true
+	deb-systemd-helper unmask cantcpd.service >/dev/null || true
+	deb-systemd-helper enable cantcpd.service >/dev/null || true
+	systemctl restart cantcpd.service || true
+fi
+
+exit 0

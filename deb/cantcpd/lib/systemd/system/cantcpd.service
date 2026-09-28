@@ -1,0 +1,31 @@
+[Unit]
+Description=cantcp SocketCAN-to-TCP gateway
+Documentation=man:cantcpd(8) https://github.com/burn-lab-dev/cantcp
+After=network.target
+
+[Service]
+Type=simple
+User=cantcp
+Group=cantcp
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_CAN
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service @network-io
+UMask=0077
+ExecStart=/usr/bin/cantcpd --config /etc/cantcp/cantcpd.json
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

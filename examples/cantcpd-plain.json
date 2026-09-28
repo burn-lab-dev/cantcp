@@ -1,0 +1,23 @@
+{
+  "listen": "127.0.0.1:29536",
+  "can": {
+    "interface": "can0",
+    "error_frames": false
+  },
+  "limits": {
+    "max_connections": 16,
+    "client_queue": 1024,
+    "read_timeout": "5s",
+    "write_timeout": "5s",
+    "idle_timeout": "0s",
+    "max_frames_per_second": 0
+  },
+  "stats": {
+    "enable": true,
+    "listen": "127.0.0.1:29537"
+  },
+  "log": {
+    "level": "info",
+    "format": "text"
+  }
+}

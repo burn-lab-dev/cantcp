@@ -1,0 +1,14 @@
+Package: cantcp-cli
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
+Section: net
+Priority: optional
+Homepage: https://github.com/burn-lab-dev/cantcp
+Description: cantcp command-line client
+ cantcp-cli connects to cantcp servers: it listens to CAN frames, sends
+ frames built from flags or read from candump-style files, and fetches the
+ server statistics over HTTP. Connections can use TLS 1.3 with an optional
+ client certificate.
+ .
+ Developed by BURN-LAB: https://burn-lab.ru

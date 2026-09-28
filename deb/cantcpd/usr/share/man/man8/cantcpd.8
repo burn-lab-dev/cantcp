@@ -1,0 +1,137 @@
+.TH CANTCPD 8 "2026-09-28" "cantcp" "System Manager's Manual"
+.SH NAME
+cantcpd \- cantcp SocketCAN-to-TCP gateway daemon
+.SH SYNOPSIS
+.B cantcpd
+[\fIflags\fR]
+.SH DESCRIPTION
+.B cantcpd
+bridges one Linux SocketCAN interface and TCP clients speaking the cantcp
+protocol: frames read from the CAN bus are broadcast to every connected
+client, frames sent by the clients are written to the bus. The connection is
+either plain (trusted perimeter) or TLS 1.3; plain mode listens on the
+loopback interface unless
+.B \-\-allow-plain
+is given.
+.PP
+Settings come from the built-in defaults, the JSON configuration file, the
+.B CANTCP_*
+environment variables and the command line flags, in that order of
+precedence. Every value is validated before the daemon starts.
+.SH OPTIONS
+.TP
+.B \-\-config \fIpath\fR
+JSON configuration file. Default:
+.IR /etc/cantcp/cantcpd.json ;
+a missing default file is not an error.
+.TP
+.B \-\-listen \fIhost:port\fR
+TCP listen address (default
+.IR 127.0.0.1:29536 ).
+.TP
+.B \-\-can \fIinterface\fR
+SocketCAN interface to serve (default
+.IR can0 ).
+One daemon instance serves one interface: run one instance per bus with its
+own unit instance and configuration.
+.TP
+.B \-\-error-frames
+Forward CAN error frames.
+.TP
+.B \-\-allow-plain
+Allow plain mode on a non-loopback address. Without TLS settings and this
+flag the daemon refuses to start on a public address.
+.TP
+.B \-\-tls-cert \fIfile\fR, \fB\-\-tls-key \fIfile\fR
+TLS server certificate and key. Setting both enables TLS 1.3.
+.TP
+.B \-\-tls-ca \fIfile\fR
+CA file used to verify client certificates.
+.TP
+.B \-\-tls-client-auth \fImode\fR
+Client certificate mode:
+.IR none ,
+.I verify_if_given
+or
+.IR require_and_verify .
+.TP
+.B \-\-max-connections \fIn\fR
+Maximum number of simultaneous clients (default 16).
+.TP
+.B \-\-client-queue \fIn\fR
+Per-client frame queue length (default 1024). When the queue is full the
+frame is dropped and counted.
+.TP
+.B \-\-read-timeout \fId\fR, \fB\-\-write-timeout \fId\fR
+TLS handshake timeout and per-frame write timeout (default 5s each).
+.TP
+.B \-\-idle-timeout \fId\fR
+Close a client after this idle time; 0 disables it.
+.TP
+.B \-\-max-frames-per-second \fIn\fR
+Per-client frame rate limit from the client to the CAN bus; 0 disables it.
+.TP
+.B \-\-stats-listen \fIhost:port\fR
+HTTP statistics address (default
+.IR 127.0.0.1:29537 ).
+.TP
+.B \-\-no-stats
+Disable the HTTP statistics listener.
+.TP
+.B \-\-log-level \fIlevel\fR, \fB\-\-log-format \fIformat\fR
+Log level (debug, info, warn, error) and format (text, json).
+.TP
+.B \-\-version
+Print the version and exit.
+.SH CONFIGURATION FILE
+The JSON file accepts the keys
+.IR listen ,
+.IR allow_plain ,
+.IR can ,
+.IR tls ,
+.IR limits ,
+.I stats
+and
+.IR log .
+Unknown keys are rejected. Durations are Go strings such as
+.IR 5s .
+See
+.I /usr/share/doc/cantcpd/examples/
+and the project documentation for the complete schema.
+.SH HTTP ENDPOINTS
+.TP
+.B GET /healthz
+Liveness check.
+.TP
+.B GET /api/v1/stats
+JSON statistics snapshot: CAN counters, TCP counters and the client list.
+.TP
+.B GET /metrics
+Prometheus text exposition format.
+.SH SIGNALS
+.TP
+.B SIGHUP
+Reload the TLS certificate material, the log level and the limits from the
+same configuration sources. The listen address, the CAN interface, the TLS
+switch and the statistics address are fixed for the lifetime of the process.
+.SH SECURITY
+TLS is limited to version 1.3. The daemon never logs frame payloads. The
+systemd unit runs as the unprivileged user
+.I cantcp
+with the single capability CAP_NET_RAW and with a hardened sandbox
+(ProtectSystem=strict, PrivateTmp, RestrictAddressFamilies, SystemCallFilter).
+See the project SECURITY.md for the threat model.
+.SH CROSS-COMPILATION
+The binaries are pure Go. Build them on any platform for any Go target:
+.PP
+.nf
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./cmd/cantcpd
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build ./cmd/cantcpd
+CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build ./cmd/cantcpd
+.fi
+.PP
+The published release packages use linux/amd64, linux/arm64 and linux/armv7
+(GOARM=7, the Debian armhf architecture).
+.SH SEE ALSO
+.BR cantcp-cli (1),
+.I https://github.com/burn-lab-dev/cantcp
