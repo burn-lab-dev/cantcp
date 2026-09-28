@@ -29,6 +29,9 @@ fi
 
 rm -rf "$repo"
 mkdir -p "$repo/dists/$suite/main"
+# Make the path absolute: the script changes into dists/<suite> before it
+# writes the signature files back into the repository root.
+repo=$(cd "$repo" && pwd)
 
 arches=""
 for deb in "$debs"/*.deb; do
