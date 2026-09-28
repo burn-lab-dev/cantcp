@@ -49,13 +49,17 @@ jobs:
           fi
           if sudo modprobe vcan; then
             sudo ip link add dev vcan0 type vcan
+            # MTU 72 enables CAN FD on the virtual bus.
+            sudo ip link set vcan0 mtu 72
             sudo ip link set up vcan0
             echo "vcan0 is up: the socketcan and e2e tests will run"
           else
             echo "::warning::vcan is not available on this runner; the socketcan and e2e tests will be skipped"
           fi
       - name: go test -race with vcan0 (socketcan and end-to-end tests)
-        run: go test -race ./...
+        # The socketcan and e2e packages share vcan0: run the packages
+        # sequentially so the tests do not see each other's frames.
+        run: go test -race -p 1 ./...
 
   cross:
     runs-on: ubuntu-latest

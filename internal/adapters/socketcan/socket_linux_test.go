@@ -28,6 +28,23 @@ func testInterface(t *testing.T) string {
 	return "vcan0"
 }
 
+// canFDInterface returns the interface for the CAN FD test. A virtual bus is
+// created with MTU 16 by default; CAN FD needs MTU 72:
+//
+//	sudo ip link set vcan0 mtu 72
+func canFDInterface(t *testing.T) string {
+	t.Helper()
+	iface := testInterface(t)
+	ifi, err := net.InterfaceByName(iface)
+	if err != nil {
+		t.Skipf("%s: %v", iface, err)
+	}
+	if ifi.MTU < 72 {
+		t.Skipf("%s MTU is %d: CAN FD needs MTU 72 (ip link set %s mtu 72)", iface, ifi.MTU, iface)
+	}
+	return iface
+}
+
 // rawClassic builds a raw classic frame.
 func rawClassic(t *testing.T, id uint32, data ...byte) []byte {
 	t.Helper()
@@ -90,7 +107,7 @@ func TestOpen_RoundTripClassic(t *testing.T) {
 }
 
 func TestOpen_RoundTripFD(t *testing.T) {
-	iface := testInterface(t)
+	iface := canFDInterface(t)
 	bus, err := Open(iface, false)
 	if err != nil {
 		t.Fatalf("Open() = %v", err)

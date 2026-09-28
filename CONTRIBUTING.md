@@ -34,6 +34,7 @@ The end-to-end tests need a virtual CAN interface:
 ```sh
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72     # the CAN FD test needs MTU 72
 sudo ip link set up vcan0
 go test ./internal/e2e/
 ```

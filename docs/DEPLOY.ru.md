@@ -137,6 +137,7 @@ sudo ip link set can0 up type can bitrate 500000
 # Виртуальная шина: тесты без устройства.
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
+sudo ip link set vcan0 mtu 72     # CAN FD (классический CAN — MTU 16)
 sudo ip link set up vcan0
 ```
 
