@@ -32,7 +32,18 @@ sudo apt install cantcpd cantcp-cli
 ```
 
 Репозиторий пересобирается из `.deb`-файлов релиза workflow'ом релиза и
-подписывается ключом проекта; публичный ключ — `cantcp.gpg`.
+подписывается ключом проекта; публичный ключ — `cantcp.gpg`. Отпечаток
+ключа:
+
+```
+7321 58E5 361A 8288 7F6E  E1A7 126B 909D ED55 B3AD
+```
+
+Проверьте скачанный ключ до того, как доверять ему:
+
+```sh
+curl -fsSL https://burn-lab-dev.github.io/cantcp/cantcp.gpg | gpg --show-keys
+```
 
 ## systemd
 

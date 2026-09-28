@@ -33,7 +33,17 @@ sudo apt install cantcpd cantcp-cli
 
 The repository is rebuilt from the release `.deb` files by the release
 workflow and signed with the project APT key; the public key is
-`cantcp.gpg`.
+`cantcp.gpg`. Its fingerprint is:
+
+```
+7321 58E5 361A 8288 7F6E  E1A7 126B 909D ED55 B3AD
+```
+
+Check the downloaded key before trusting it:
+
+```sh
+curl -fsSL https://burn-lab-dev.github.io/cantcp/cantcp.gpg | gpg --show-keys
+```
 
 ## systemd
 
