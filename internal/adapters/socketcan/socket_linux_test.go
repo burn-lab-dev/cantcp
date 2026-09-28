@@ -87,20 +87,27 @@ func readWithTimeout(t *testing.T, bus *Bus) []byte {
 
 func TestOpen_RoundTripClassic(t *testing.T) {
 	iface := testInterface(t)
-	bus, err := Open(iface, false)
+	reader, err := Open(iface, false)
 	if err != nil {
-		t.Fatalf("Open() = %v", err)
+		t.Fatalf("Open(reader) = %v", err)
 	}
-	defer bus.Close()
-	if bus.Interface() != iface {
-		t.Fatalf("Interface() = %q, want %q", bus.Interface(), iface)
+	defer reader.Close()
+	writer, err := Open(iface, false)
+	if err != nil {
+		t.Fatalf("Open(writer) = %v", err)
+	}
+	defer writer.Close()
+	if reader.Interface() != iface {
+		t.Fatalf("Interface() = %q, want %q", reader.Interface(), iface)
 	}
 
+	// The writer and the reader are separate sockets: the test does not
+	// depend on the vcan loopback option.
 	want := rawClassic(t, 0x123, 0x11, 0x22, 0x33)
-	if err := bus.WriteFrame(want); err != nil {
+	if err := writer.WriteFrame(want); err != nil {
 		t.Fatalf("WriteFrame() = %v", err)
 	}
-	got := readWithTimeout(t, bus)
+	got := readWithTimeout(t, reader)
 	if !bytes.Equal(got, want) {
 		t.Fatalf("frame = %x, want %x", got, want)
 	}
@@ -108,21 +115,26 @@ func TestOpen_RoundTripClassic(t *testing.T) {
 
 func TestOpen_RoundTripFD(t *testing.T) {
 	iface := canFDInterface(t)
-	bus, err := Open(iface, false)
+	reader, err := Open(iface, false)
 	if err != nil {
-		t.Fatalf("Open() = %v", err)
+		t.Fatalf("Open(reader) = %v", err)
 	}
-	defer bus.Close()
+	defer reader.Close()
+	writer, err := Open(iface, false)
+	if err != nil {
+		t.Fatalf("Open(writer) = %v", err)
+	}
+	defer writer.Close()
 
 	f := cantcp.Frame{ID: 0x1ABCDE, Type: cantcp.TypeFd, EFF: true, BRS: true, Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}}
 	want, err := f.MarshalBinary()
 	if err != nil {
 		t.Fatalf("MarshalBinary() = %v", err)
 	}
-	if err := bus.WriteFrame(want); err != nil {
+	if err := writer.WriteFrame(want); err != nil {
 		t.Fatalf("WriteFrame() = %v", err)
 	}
-	got := readWithTimeout(t, bus)
+	got := readWithTimeout(t, reader)
 	if !bytes.Equal(got, want) {
 		t.Fatalf("frame = %x, want %x", got, want)
 	}
