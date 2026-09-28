@@ -61,6 +61,11 @@ jobs:
         env:
           APT_GPG_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
         run: scripts/apt-repo.sh debs repo stable
+      - name: Stage the test reports for the Pages site
+        run: |
+          mkdir -p repo/test-reports
+          cp docs/test-reports/*.md repo/test-reports/ 2>/dev/null || true
+          python3 scripts/test-reports-index.py repo/test-reports > repo/test-reports/index.html
       - name: Publish to GitHub Pages (gh-pages)
         uses: peaceiris/actions-gh-pages@v4
         with:

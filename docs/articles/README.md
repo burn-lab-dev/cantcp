@@ -2,6 +2,10 @@
 
 **English** | [Русский](README.ru.md)
 
+> **Status (2026-09-28):** the plan is approved; the drafts are written on
+> the next session (2026-09-29). The priority topics are 1 (one config, three
+> sources) and 3 (gateway security).
+
 Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
 development: Linux, drivers, CAN and industrial telemetry.
 
