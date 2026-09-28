@@ -5,6 +5,10 @@
 Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
 development: Linux, drivers, CAN and industrial telemetry.
 
+The canon of the protocol — the specification and the shared test vectors —
+lives in [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec). This
+document describes how the daemon and the client use it.
+
 ## Frames on the wire
 
 `cantcp` carries raw Linux SocketCAN frames in a TCP byte stream. A packet is:
