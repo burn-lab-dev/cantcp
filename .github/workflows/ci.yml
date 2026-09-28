@@ -39,6 +39,10 @@ jobs:
         with:
           go-version: "1.26.x"
           cache: true
+      - name: Install can-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y can-utils
       - name: Enable vcan0
         run: |
           if ! sudo modprobe vcan 2>/dev/null; then
@@ -52,6 +56,7 @@ jobs:
             # MTU 72 enables CAN FD on the virtual bus.
             sudo ip link set vcan0 mtu 72
             sudo ip link set up vcan0
+            echo "VCAN_OK=1" >> "$GITHUB_ENV"
             echo "vcan0 is up: the socketcan and e2e tests will run"
           else
             echo "::warning::vcan is not available on this runner; the socketcan and e2e tests will be skipped"
@@ -60,6 +65,18 @@ jobs:
         # The socketcan and e2e packages share vcan0: run the packages
         # sequentially so the tests do not see each other's frames.
         run: go test -race -p 1 ./...
+      - name: Smoke test on vcan
+        if: env.VCAN_OK == '1'
+        run: scripts/vcan-smoke.sh --report artifacts
+      - name: Upload the smoke report
+        if: ${{ always() && env.VCAN_OK == '1' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vcan-smoke-report
+          path: artifacts/
+      - name: Publish the smoke report to the job summary
+        if: ${{ always() && env.VCAN_OK == '1' }}
+        run: cat artifacts/report.md >> "$GITHUB_STEP_SUMMARY"
 
   cross:
     runs-on: ubuntu-latest
