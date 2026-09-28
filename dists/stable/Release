@@ -1,0 +1,27 @@
+Architectures: amd64 arm64 armhf
+Codename: stable
+Components: main
+Date: Mon, 28 Sep 2026 15:09:18 +0000
+Label: cantcp
+Origin: cantcp
+Suite: stable
+MD5Sum:
+ c713f234b271e119cfcb8eed4a396bb8              148 Release
+ 81e60e34833211ea037a68aec7ff4d1f              804 main/binary-amd64/Packages.gz
+ 49db1267b9f6fb7e978eaa4d50253ab6              804 main/binary-arm64/Packages.gz
+ 595e3c085071e455f004f0d1089ac2ca              805 main/binary-armhf/Packages.gz
+SHA1:
+ 5c23a7927b823f79313cf351b0ef57fd122497a9              148 Release
+ a672567d429c4dfb21d3e5c115e8871333551dd7              804 main/binary-amd64/Packages.gz
+ 92384907357f41dad98b9496b74bd252d4b637aa              804 main/binary-arm64/Packages.gz
+ 85e39b27a1ebc617f556e954962d187c2e64be12              805 main/binary-armhf/Packages.gz
+SHA256:
+ bfe25dd9c210c194c9e196b436494afc01b1d458670bb7ff3db1483295e2500b              148 Release
+ df116edb6a7d9dd40b59b62c94b9aeaa051e5daeacca0b975d55575ba5aebe94              804 main/binary-amd64/Packages.gz
+ df1ab1d820303166d0b8aea48b88285f9bc2b24bb7d1f535f26a1de049aebb0b              804 main/binary-arm64/Packages.gz
+ 8c8e2841fb056107b7b26cb8e6d2b71d9dcf835af5057bce57ca0a2add291121              805 main/binary-armhf/Packages.gz
+SHA512:
+ 89734c0623a49ec42b131d12a1a63f5dbfbd4a6e3d0bc02b883e669e8a46da6886f16120d3def0cad49c24b1329d3e74d03680e0a4daea9a03dc632f60554876              148 Release
+ 8bebb21967951d95220c1d726b465055de8358f1935362862cedcc21e69c689f1e824557b6f034c8440e5cf0846ec19986ba719db0a217dcfe39b798b3898456              804 main/binary-amd64/Packages.gz
+ ceea4e57d3fc67f1f588d44f391fa5838257459f6d22603d4a5024ea73206f5e1ba80f5a7fe7d547ec5627825611e166df7a8b31111455b3a712f156082a1c20              804 main/binary-arm64/Packages.gz
+ c20bafcd08da2c16a491255ace4f4775b9d00575deea8737e5893a8e3dc216447f8e1714af9a3808fb369418525840a355cd585aedc96436ed90c1f0c9e67e9d              805 main/binary-armhf/Packages.gz
