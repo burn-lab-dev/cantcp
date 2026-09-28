@@ -4,6 +4,7 @@ Architecture: @ARCH@
 Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
 Section: net
 Priority: optional
+Depends: adduser
 Homepage: https://github.com/burn-lab-dev/cantcp
 Description: cantcp SocketCAN-to-TCP gateway daemon
  cantcpd bridges one Linux SocketCAN interface and TCP clients speaking the

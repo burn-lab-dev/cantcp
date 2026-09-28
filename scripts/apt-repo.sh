@@ -56,7 +56,7 @@ for arch in $arches; do
 	dir="$repo/dists/$suite/main/binary-$arch"
 	mkdir -p "$dir"
 	(cd "$repo" && dpkg-scanpackages --arch "$arch" pool /dev/null > "dists/$suite/main/binary-$arch/Packages")
-	gzip -9 -n "$dir/Packages"
+	gzip -9 -n -k "$dir/Packages"
 done
 
 cd "$repo/dists/$suite"
