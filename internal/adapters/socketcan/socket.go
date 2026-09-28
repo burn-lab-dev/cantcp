@@ -17,11 +17,12 @@ import (
 
 // Linux CAN socket constants from linux/can.h and linux/can/raw.h.
 const (
-	canRAW          = 1          // CAN_RAW
-	solCANRaw       = 101        // SOL_CAN_RAW
-	canRawErrFilter = 2          // CAN_RAW_ERR_FILTER
-	canRawFDFrames  = 5          // CAN_RAW_FD_FRAMES
-	canErrMask      = 0x1FFFFFFF // CAN_ERR_MASK
+	canRAW           = 1          // CAN_RAW
+	solCANRaw        = 101        // SOL_CAN_RAW
+	canRawErrFilter  = 2          // CAN_RAW_ERR_FILTER
+	canRawRecvOwnMsg = 4          // CAN_RAW_RECV_OWN_MSGS
+	canRawFDFrames   = 5          // CAN_RAW_FD_FRAMES
+	canErrMask       = 0x1FFFFFFF // CAN_ERR_MASK
 )
 
 // pollWait is the timeout of one select(2) wait: shutdown and readiness are
@@ -69,6 +70,14 @@ func Open(iface string, errorFrames bool) (*Bus, error) {
 	if err := syscall.SetsockoptInt(fd, solCANRaw, canRawFDFrames, 1); err != nil {
 		_ = syscall.Close(fd)
 		return nil, fmt.Errorf("socketcan: enable CAN FD on %s: %w", iface, err)
+	}
+	// Receive the socket's own transmissions: a frame sent by a client
+	// through the gateway must be visible to every other client (and to the
+	// sender) as if it appeared on the bus. Without the loopback the bus
+	// read side stays silent for gateway traffic.
+	if err := syscall.SetsockoptInt(fd, solCANRaw, canRawRecvOwnMsg, 1); err != nil {
+		_ = syscall.Close(fd)
+		return nil, fmt.Errorf("socketcan: enable own messages on %s: %w", iface, err)
 	}
 	if err := bindCAN(fd, ifi.Index); err != nil {
 		_ = syscall.Close(fd)

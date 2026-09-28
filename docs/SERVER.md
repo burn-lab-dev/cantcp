@@ -11,7 +11,10 @@ development: Linux, drivers, CAN and industrial telemetry.
 
 - frames read from the CAN bus are broadcast to every connected client as
   cantcp packets (see [PROTOCOL.md](PROTOCOL.md));
-- cantcp packets received from a client are written to the CAN bus.
+- cantcp packets received from a client are written to the CAN bus and, via
+  the SocketCAN loopback (`CAN_RAW_RECV_OWN_MSGS`), broadcast to every
+  client including the sender: all clients see the full bus traffic that
+  passes through the gateway, not only the frames other bus nodes sent.
 
 Everything else — statistics, health checks, monitoring — is served over a
 separate HTTP listener. The frame stream itself stays minimal.
