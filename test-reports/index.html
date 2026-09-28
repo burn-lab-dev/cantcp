@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang='en'><head><meta charset='utf-8'>
+<title>cantcp test reports</title>
+<style>
+body{font-family:sans-serif;max-width:64rem;margin:2rem auto;padding:0 1rem}
+pre{background:#f4f4f4;padding:1rem;overflow-x:auto}
+a{color:#0366d6}
+</style></head><body>
+<h1>cantcp test reports</h1>
+<p>Generated from the release workflow; the canonical files live in <a href='https://github.com/burn-lab-dev/cantcp/tree/main/docs/test-reports'>docs/test-reports</a>.</p>
+<ul>
+<li><a href='#README.ru.md'>README.ru.md</a></li>
+<li><a href='#README.md'>README.md</a></li>
+<li><a href='#2026-09-28-vcan-smoke.ru.md'>2026-09-28-vcan-smoke.ru.md</a></li>
+<li><a href='#2026-09-28-vcan-smoke.md'>2026-09-28-vcan-smoke.md</a></li>
+</ul>
+<h2 id='README.ru.md'>README.ru.md</h2>
+<pre># Отчёты о тестировании
+
+[English](README.md) | **Русский**
+
+Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
+драйверы, CAN и промышленная телеметрия.
+
+Отчёты прогонов против канона протокола
+([cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec)) и пары
+демон/клиент:
+
+- автоматические прогоны: `scripts/vcan-smoke.sh` в CI выкладывает
+  `report.json` и `report.md` артефактами и в summary джобы;
+- коммитимые отчёты: один Markdown-файл на прогон, имя
+  `YYYY-MM-DD-&lt;среда&gt;.md` (и `.ru.md`), создаётся после ручного прогона
+  (`scripts/vcan-smoke.sh --report DIR`, `scripts/hw-smoke.sh --report DIR`);
+- workflow релиза зеркалит этот каталог на GitHub Pages (`/test-reports/`).
+
+Отчёт фиксирует среду (машина, ядро, Go, версии библиотек), интерфейс и
+MTU или битрейт, таблицу проверок с результатами и найденные отклонения.
+Рядом с Markdown при необходимости кладётся сырой `report.json`.
+
+| Отчёт | Среда |
+|---|---|
+| [2026-09-28-vcan-smoke.ru.md](2026-09-28-vcan-smoke.ru.md) | виртуальная шина (vcan0, MTU 72), первый полный прогон |
+</pre>
+<h2 id='README.md'>README.md</h2>
+<pre># Test reports
+
+**English** | [Русский](README.ru.md)
+
+Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
+development: Linux, drivers, CAN and industrial telemetry.
+
+Reports of test runs against the protocol canon
+([cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec)) and the
+daemon/client pair:
+
+- automatic runs: `scripts/vcan-smoke.sh` in CI uploads `report.json` and
+  `report.md` as artifacts and into the job summary;
+- committed reports: one Markdown file per run, named
+  `YYYY-MM-DD-&lt;environment&gt;.md` (and `.ru.md`), written after a manual run
+  (`scripts/vcan-smoke.sh --report DIR`, `scripts/hw-smoke.sh --report DIR`);
+- the release workflow mirrors this directory to the GitHub Pages site
+  (`/test-reports/`).
+
+A report states the environment (machine, kernel, Go, library versions), the
+interface and MTU or bitrate, the check table with pass/fail and the
+deviations found. Keep the raw `report.json` next to the Markdown when it is
+long.
+
+| Report | Environment |
+|---|---|
+| [2026-09-28-vcan-smoke.md](2026-09-28-vcan-smoke.md) | virtual bus (vcan0, MTU 72), first full run |
+</pre>
+<h2 id='2026-09-28-vcan-smoke.ru.md'>2026-09-28-vcan-smoke.ru.md</h2>
+<pre># Отчёт смоука на vcan — 2026-09-28
+
+[English](2026-09-28-vcan-smoke.md) | **Русский**
+
+Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
+драйверы, CAN и промышленная телеметрия.
+
+## Среда
+
+- машина: рабочая станция разработчика, Linux (Ubuntu 24.04), ядро с
+  модулем `vcan`;
+- шина: `vcan0`, MTU 72 (CAN FD включён);
+- версии: `cantcp v0.1.0`, `cantcp-lib-go v0.1.1`, `cantcp-lib-python
+  0.1.1`, Go 1.24/1.25/1.26, Python 3.10–3.14 в CI;
+- команды: `go test -race ./...`, `scripts/vcan-smoke.sh --report DIR`,
+  плюс ручные проверки нагрузки и interop ниже.
+
+## Автоматический смоук (8/8)
+
+| Статус | Проверка | Детали |
+|---|---|---|
+| PASS | `matrix` | 15 кадров матрицы дошли до клиента и видны на шине |
+| PASS | `python-interop` | Python-клиент получил кадры от Go-клиента и свои |
+| PASS | `rate-limit` | 100 кадров в одном соединении, 90 отброшено лимитом 10 fps |
+| PASS | `idle-timeout` | молчащий клиент отключён за 1 с |
+| PASS | `max-connections` | второе соединение отклонено и закрыто |
+| PASS | `tls-mtls` | mutual-TLS-обмен доставил кадр |
+| PASS | `tls-version` | TLS 1.2 отвергнут protocol alert&#x27;ом |
+| PASS | `sighup` | сертификат ротирован без рестарта |
+
+Матрица покрывает классические кадры (0 и 8 байт), CAN FD со всеми
+допустимыми длинами данных (0, 1, 8, 12, 16, 20, 24, 32, 48, 64),
+расширенный идентификатор, remote-кадр и флаги BRS/ESI; данные включают
+magic `C3 3C` внутри payload.
+
+## Ручные проверки
+
+| Проверка | Результат |
+|---|---|
+| 5000 нумерованных кадров в умеренном темпе (Python-клиент → демон → CLI-слушатель) | 5000/5000, уникальные, полные, по порядку, без дублей |
+| Burst 200000 кадров `cangen -g 0` с медленным клиентом (`client_queue=1`) | 98832 кадра отброшено для этого клиента, демон остался жив и продолжил работу |
+| Burst без медленного клиента (`cangen -g 0`, 200000 кадров) | независимый `candump` терял кадры так же: потеря — свойство `vcan`/SocketCAN при экстремальных burst, не вина шлюза; умеренные скорости без потерь |
+| Три слушателя (два CLI, один Python) + два источника (CLI, Python) одновременно | каждый слушатель получил каждый кадр, включая эхо собственного |
+| Перечитывание при живой сессии (`SIGHUP`, ротация сертификата) | живая сессия продолжила работать, новые соединения — с новым сертификатом |
+
+## Находки этого прогона (все исправлены до релиза)
+
+1. Шлюз не видел (и потому не рассылал) собственные записанные кадры —
+   исправлено включением `CAN_RAW_RECV_OWN_MSGS` (PR #8).
+2. Не хватало `CAN_RAW_FD_FRAMES`: запись CAN FD падала с `EINVAL`
+   (исправлено ранее, PR #5 библиотеки).
+3. Кодек отвергал маркер ядра `CANFD_FDF` — исправлено в
+   cantcp-lib-go v0.1.1 и cantcp-lib-python 0.1.1.
+4. APT-репозиторий отдавал только `Packages.gz`, и apt не подхватывал
+   индекс; пакету не хватало `Depends: adduser` — исправлено, проверено
+   `apt install` в чистом контейнере.
+5. TX-кадры ошибок `vcan` не доставляет: путь error frames надо проверять
+   на железе (план на 2026-09-29).
+
+## Известные ограничения
+
+- Экстремальные burst (`cangen -g 0`) переполняют буферы `vcan`; реальная
+  шина CAN на 125k–1M таких скоростей не даёт, а умеренные скорости идут
+  без потерь.
+- Аппаратные проверки (битрейты, терминаторы и счётчики ошибок, bus-off,
+  data phase FD) пройдут 2026-09-29 на двух физических адаптерах и будут
+  добавлены сюда.
+</pre>
+<h2 id='2026-09-28-vcan-smoke.md'>2026-09-28-vcan-smoke.md</h2>
+<pre># vcan smoke report — 2026-09-28
+
+**English** | [Русский](2026-09-28-vcan-smoke.ru.md)
+
+Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
+development: Linux, drivers, CAN and industrial telemetry.
+
+## Environment
+
+- host: developer workstation, Linux (Ubuntu 24.04), kernel with the `vcan`
+  module;
+- bus: `vcan0`, MTU 72 (CAN FD enabled);
+- versions: `cantcp v0.1.0`, `cantcp-lib-go v0.1.1`, `cantcp-lib-python
+  0.1.1`, Go 1.24/1.25/1.26, Python 3.10–3.14 in CI;
+- commands: `go test -race ./...`, `scripts/vcan-smoke.sh --report DIR`, plus
+  the manual load and interop checks below.
+
+## Automated smoke (8/8)
+
+| Status | Check | Detail |
+|---|---|---|
+| PASS | `matrix` | 15 frames of the matrix echoed to the client and seen on the bus |
+| PASS | `python-interop` | the Python client received frames from the Go client and itself |
+| PASS | `rate-limit` | 100 frames in one connection, 90 dropped by the 10 fps limit |
+| PASS | `idle-timeout` | a silent client was disconnected in 1s |
+| PASS | `max-connections` | the second client was rejected and closed |
+| PASS | `tls-mtls` | the mutual-TLS exchange delivered the frame |
+| PASS | `tls-version` | TLS 1.2 was rejected with a protocol alert |
+| PASS | `sighup` | the certificate was rotated without a restart |
+
+The matrix covers classic frames (0 and 8 bytes), CAN FD with every valid
+data length (0, 1, 8, 12, 16, 20, 24, 32, 48, 64), the extended identifier,
+the remote frame and the BRS/ESI flags; the data patterns exercise the
+`C3 3C` magic inside the payload.
+
+## Manual checks
+
+| Check | Result |
+|---|---|
+| 5000 numbered frames at a moderate rate (Python client → daemon → CLI listener) | 5000/5000, unique, complete, in order, no duplicates |
+| 200000-frame burst via `cangen -g 0` with a slow client (`client_queue=1`) | 98832 frames dropped for that client, the daemon stayed alive and kept serving |
+| Burst without a slow client (`cangen -g 0`, 200000 frames) | an independent `candump` lost frames as well: the loss is a `vcan`/SocketCAN property at extreme bursts, not a gateway fault; moderate rates are lossless |
+| Three listeners (two CLI, one Python) + two sources (CLI, Python) at once | every listener received every frame, including the echo of its own |
+| Reload under a live session (`SIGHUP`, rotated certificate) | the live session kept working, new connections used the new certificate |
+
+## Findings of this run (all fixed before the release)
+
+1. The gateway did not see (and therefore did not broadcast) frames it wrote
+   itself — fixed by enabling `CAN_RAW_RECV_OWN_MSGS` (PR #8).
+2. `CAN_RAW_FD_FRAMES` was missing: CAN FD writes failed with `EINVAL`
+   (fixed before, PR #5 of the library).
+3. The codec rejected the kernel&#x27;s `CANFD_FDF` marker — fixed in
+   cantcp-lib-go v0.1.1 and cantcp-lib-python 0.1.1.
+4. The APT repository served only `Packages.gz` and apt did not pick the
+   index up; the package lacked `Depends: adduser` — both fixed, verified
+   with `apt install` in a clean container.
+5. TX error frames are not delivered by `vcan`: the error-frame path must be
+   tested on hardware (planned for 2026-09-29).
+
+## Known limitations
+
+- Extreme bursts (`cangen -g 0`) overrun `vcan` buffers; a real CAN bus at
+  125k–1M cannot produce such rates, and moderate rates are lossless.
+- Hardware-specific checks (bitrates, terminator/error counters, bus-off,
+  FD data phase) run on 2026-09-29 with two physical adapters and will be
+  appended here.
+</pre>
+</body></html>
