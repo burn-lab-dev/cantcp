@@ -1,0 +1,41 @@
+Package: cantcp-cli
+Version: 0.1.0
+Architecture: arm64
+Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
+Filename: pool/main/c/cantcp-cli/cantcp-cli_0.1.0_arm64.deb
+Size: 2092900
+MD5sum: 095b946f6de575c478ec5ea1809f12d3
+SHA1: 9143bacff1848b487448ea8400d0d65fb9770485
+SHA256: e4afb884833034f49fe71f8fbb559567bbf531e2e07896bfa0dbde2b326589c6
+Section: net
+Priority: optional
+Homepage: https://github.com/burn-lab-dev/cantcp
+Description: cantcp command-line client
+ cantcp-cli connects to cantcp servers: it listens to CAN frames, sends
+ frames built from flags or read from candump-style files, and fetches the
+ server statistics over HTTP. Connections can use TLS 1.3 with an optional
+ client certificate.
+ .
+ Developed by BURN-LAB: https://burn-lab.ru
+
+Package: cantcpd
+Version: 0.1.0
+Architecture: arm64
+Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
+Depends: adduser
+Filename: pool/main/c/cantcpd/cantcpd_0.1.0_arm64.deb
+Size: 2149694
+MD5sum: 405871d4d116ad12b156448622742e9c
+SHA1: d76ff6402078fb6354e72fa6ac02eeb8aa43bc0b
+SHA256: 95023b58c4d0bd869638d035892bbcf38e2b7121ebd0a39a68d0c67dad5cfa9d
+Section: net
+Priority: optional
+Homepage: https://github.com/burn-lab-dev/cantcp
+Description: cantcp SocketCAN-to-TCP gateway daemon
+ cantcpd bridges one Linux SocketCAN interface and TCP clients speaking the
+ cantcp protocol. The connection is either plain (trusted perimeter) or
+ TLS 1.3; the daemon serves JSON statistics and Prometheus metrics over
+ HTTP and reloads the TLS material on SIGHUP.
+ .
+ Developed by BURN-LAB: https://burn-lab.ru
+
