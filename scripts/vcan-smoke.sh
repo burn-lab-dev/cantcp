@@ -152,12 +152,15 @@ PY
 matrix_len=$(wc -l <"$matrix")
 
 if start_server; then
-	(timeout 20 candump -n "$matrix_len" "$iface" >"$work/candump.log" 2>&1 &)
+	# candump runs without -n: it starts asynchronously, so the check waits
+	# and then counts the lines instead of racing the first frames.
+	(timeout 30 candump "$iface" >"$work/candump.log" 2>&1 &)
 	(timeout 20 "$root/bin/cantcp-cli" listen --json --count "$matrix_len" \
 		>"$work/listen.json" 2>"$work/listen.err" &)
-	sleep 1
+	sleep 2
 	"$root/bin/cantcp-cli" send --input "$matrix" >/dev/null 2>&1
 	sleep 2
+	pkill -x candump 2>/dev/null
 	seen=$(wc -l <"$work/listen.json" 2>/dev/null || echo 0)
 	bus=$(wc -l <"$work/candump.log" 2>/dev/null || echo 0)
 	if [ "$seen" = "$matrix_len" ] && [ "$bus" = "$matrix_len" ]; then
