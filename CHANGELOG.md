@@ -7,6 +7,8 @@ v1.0.0 the command line, the configuration and the JSON API may change.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-28
+
 ### Added
 
 - `cantcpd`: SocketCAN-to-TCP gateway with the cantcp frame stream

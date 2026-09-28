@@ -18,6 +18,8 @@ jobs:
         with:
           go-version: "1.26.x"
           cache: true
+      - name: Show the library version used for the build
+        run: go list -m github.com/burn-lab-dev/cantcp-lib-go
       - name: Build the binaries (amd64, arm64, armv7)
         run: make cross
       - name: Build the .deb packages (amd64, arm64, armhf)
