@@ -45,6 +45,11 @@ func canFDInterface(t *testing.T) string {
 	return iface
 }
 
+// canFDF is the CANFD_FDF bit the Linux kernel may set in the flags byte of
+// a delivered CAN FD frame; a raw pass-through must keep it and the tests
+// must not treat it as corruption.
+const canFDF = 0x04
+
 // rawClassic builds a raw classic frame.
 func rawClassic(t *testing.T, id uint32, data ...byte) []byte {
 	t.Helper()
@@ -135,6 +140,12 @@ func TestOpen_RoundTripFD(t *testing.T) {
 		t.Fatalf("WriteFrame() = %v", err)
 	}
 	got := readWithTimeout(t, reader)
+	// Mask the kernel's CANFD_FDF bit before the comparison: the adapter
+	// passes the frame through as it came from the bus.
+	if len(got) == len(want) {
+		got = bytes.Clone(got)
+		got[5] &^= canFDF
+	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("frame = %x, want %x", got, want)
 	}
