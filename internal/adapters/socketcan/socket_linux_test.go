@@ -151,6 +151,26 @@ func TestOpen_RoundTripFD(t *testing.T) {
 	}
 }
 
+func TestBus_SeesOwnFrames(t *testing.T) {
+	// CAN_RAW_RECV_OWN_MSGS: a frame written by the bus is readable through
+	// the same bus, so the gateway can broadcast traffic it wrote itself.
+	iface := testInterface(t)
+	bus, err := Open(iface, false)
+	if err != nil {
+		t.Fatalf("Open() = %v", err)
+	}
+	defer bus.Close()
+
+	want := rawClassic(t, 0x321, 0x0A, 0x0B)
+	if err := bus.WriteFrame(want); err != nil {
+		t.Fatalf("WriteFrame() = %v", err)
+	}
+	got := readWithTimeout(t, bus)
+	if !bytes.Equal(got, want) {
+		t.Fatalf("frame = %x, want %x", got, want)
+	}
+}
+
 func TestOpen_MissingInterface(t *testing.T) {
 	if _, err := Open("cantcp-does-not-exist", false); err == nil {
 		t.Fatal("Open() = nil, want an error")

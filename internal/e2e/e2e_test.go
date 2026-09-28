@@ -167,6 +167,12 @@ func TestEndToEnd_Vcan(t *testing.T) {
 		t.Fatal("the daemon did not write the frame to the bus")
 	}
 
+	// The gateway echoes the frames it wrote itself (CAN_RAW_RECV_OWN_MSGS):
+	// the sender sees its own frame as if it appeared on the bus.
+	if got := readDeadline(t, dec); !bytes.Equal(got, fromClient) {
+		t.Fatalf("echo frame = %x, want %x", got, fromClient)
+	}
+
 	// bus -> daemon -> client
 	fromBus := rawFrame(0x456, 4, 5)
 	if err := peer.WriteFrame(fromBus); err != nil {

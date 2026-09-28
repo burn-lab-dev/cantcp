@@ -7,6 +7,13 @@ v1.0.0 the command line, the configuration and the JSON API may change.
 
 ## [Unreleased]
 
+### Fixed
+
+- `cantcpd` enables the SocketCAN loopback (`CAN_RAW_RECV_OWN_MSGS`): frames
+  sent by a client are broadcast to every client (including the sender), so
+  gateway traffic is visible to all monitors, not only frames from other bus
+  nodes. Found in the virtual-bus test run.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added
