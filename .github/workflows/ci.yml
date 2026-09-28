@@ -39,6 +39,10 @@ jobs:
         with:
           go-version: "1.26.x"
           cache: true
+      - name: Install can-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y can-utils
       - name: Enable vcan0
         run: |
           if ! sudo modprobe vcan 2>/dev/null; then

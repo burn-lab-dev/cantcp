@@ -151,7 +151,9 @@ with open(sys.argv[1], "w") as handle:
 PY
 matrix_len=$(wc -l <"$matrix")
 
-if start_server; then
+if ! command -v candump >/dev/null 2>&1; then
+	record SKIP matrix "can-utils (candump) is not installed"
+elif start_server; then
 	# candump runs without -n: it starts asynchronously, so the check waits
 	# and then counts the lines instead of racing the first frames.
 	(timeout 30 candump "$iface" >"$work/candump.log" 2>&1 &)
