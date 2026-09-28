@@ -166,7 +166,8 @@ if start_server; then
 	if [ "$seen" = "$matrix_len" ] && [ "$bus" = "$matrix_len" ]; then
 		record PASS matrix "$matrix_len frames of the matrix echoed to the client and seen on the bus"
 	else
-		record FAIL matrix "client got $seen/$matrix_len, bus saw $bus/$matrix_len"
+		hint=$(tail -1 "$work/candump.log" 2>/dev/null | cut -c1-70)
+		record FAIL matrix "client got $seen/$matrix_len, bus saw $bus/$matrix_len (${hint:-no candump output})"
 	fi
 	stop_server
 else
@@ -331,6 +332,7 @@ echo "vcan-smoke: $pass passed, $fail failed, on $iface (MTU $mtu)"
 
 if [ -n "$report_dir" ]; then
 	mkdir -p "$report_dir"
+	cp "$work"/*.log "$work"/*.err "$report_dir/" 2>/dev/null || true
 	python3 - "$report_dir" "$iface" "$mtu" "$pass" "$fail" "${results[@]}" <<'PY'
 import html
 import json
