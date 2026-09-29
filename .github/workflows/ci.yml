@@ -35,10 +35,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          # The Python client for the interop checks: the library checkout
+          # (before its tag) is built below; the released package comes from
+          # PyPI (after its tag).
+          repository: burn-lab-dev/cantcp-lib-python
+          path: cantcp-lib-python
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26.x"
           cache: true
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
       - name: Install can-utils
         run: |
           sudo apt-get update
@@ -65,9 +76,24 @@ jobs:
         # The socketcan and e2e packages share vcan0: run the packages
         # sequentially so the tests do not see each other's frames.
         run: go test -race -p 1 ./...
+      - name: Prepare the Python clients (checkout and PyPI)
+        run: |
+          (cd cantcp-lib-python && uv sync --frozen --no-dev)
+          uv venv pypi-venv --python 3.12
+          uv pip install --python pypi-venv/bin/python cantcp
+          cantcp-lib-python/.venv/bin/python3 cantcp-lib-python/examples/client.py -h >/dev/null
+          pypi-venv/bin/python cantcp-lib-python/examples/client.py -h >/dev/null
+          pypi-venv/bin/python -c "import cantcp; print('PyPI cantcp', cantcp.__version__)"
       - name: Smoke test on vcan
         if: env.VCAN_OK == '1'
-        run: scripts/vcan-smoke.sh --report artifacts
+        env:
+          PY_MAIN: ${{ github.workspace }}/cantcp-lib-python/.venv/bin/python3
+          PY_PYPI: ${{ github.workspace }}/pypi-venv/bin/python
+          PY_CLIENT: ${{ github.workspace }}/cantcp-lib-python/examples/client.py
+        run: |
+          scripts/vcan-smoke.sh --report artifacts \
+            --python-client "main=$PY_MAIN $PY_CLIENT --host 127.0.0.1 --port 29536" \
+            --python-client "pypi=$PY_PYPI $PY_CLIENT --host 127.0.0.1 --port 29536"
       - name: Upload the smoke report
         if: ${{ always() && env.VCAN_OK == '1' }}
         uses: actions/upload-artifact@v4
