@@ -3,6 +3,14 @@
 #
 # Usage:
 #   scripts/vcan-smoke.sh [--iface vcan0] [--report DIR] [--keep]
+#                         [--listen host:port] [--stats host:port]
+#                         [--python-client "name=command"]...
+#
+# --python-client may be repeated; each command is a Python client for the
+# interop check (for example "main=../cantcp-lib-python/.venv/bin/python3
+# ../cantcp-lib-python/examples/client.py"). Without it the script looks for a
+# virtualenv in the sibling cantcp-lib-python checkout (CANTCP_LIB_PYTHON
+# overrides the path).
 #
 # The interface must exist, be up and have MTU 72 (see docs/TESTING.md):
 #
@@ -24,6 +32,7 @@ listen_addr=127.0.0.1:29536
 stats_addr=127.0.0.1:29537
 report_dir=
 keep=0
+python_specs=()
 
 while [ $# -gt 0 ]; do
 	case $1 in
@@ -37,6 +46,10 @@ while [ $# -gt 0 ]; do
 		;;
 	--stats)
 		stats_addr=$2
+		shift 2
+		;;
+	--python-client)
+		python_specs+=("$2")
 		shift 2
 		;;
 	--report)
@@ -136,11 +149,12 @@ if ! (cd "$root" && make build >"$work/build.log" 2>&1); then
 	exit 2
 fi
 
-python_client=
-python_dir=$root/../cantcp-lib-python
 listen_port=${listen_addr##*:}
-if [ -x "$python_dir/.venv/bin/python3" ] && [ -f "$python_dir/examples/client.py" ]; then
-	python_client="$python_dir/.venv/bin/python3 $python_dir/examples/client.py --host 127.0.0.1 --port $listen_port"
+if [ "${#python_specs[@]}" -eq 0 ]; then
+	python_dir=${CANTCP_LIB_PYTHON:-$root/../cantcp-lib-python}
+	if [ -x "$python_dir/.venv/bin/python3" ] && [ -f "$python_dir/examples/client.py" ]; then
+		python_specs+=("local=$python_dir/.venv/bin/python3 $python_dir/examples/client.py --host 127.0.0.1 --port $listen_port")
+	fi
 fi
 
 # --- frame matrix ----------------------------------------------------------
@@ -249,28 +263,41 @@ fi
 
 # --- python client interop -------------------------------------------------
 
-if [ -n "$python_client" ] && start_server; then
+# Each spec is "name=command" (or just "command"); one check per spec, so the
+# CI can exercise the library checkout and the published PyPI package at once.
+for spec in ${python_specs[@]+"${python_specs[@]}"}; do
+	name=${spec%%=*}
+	cmd=${spec#*=}
+	if [ "$name" = "$cmd" ]; then
+		name=local
+		cmd=$spec
+	fi
+	if ! start_server; then
+		record FAIL "python-interop[$name]" "the daemon did not start"
+		continue
+	fi
 	# shellcheck disable=SC2086
-	(timeout 20 $python_client listen --count 2 >"$work/py-listen.json" 2>"$work/py-listen.err" &)
+	(timeout 20 $cmd listen --count 2 >"$work/py-listen.json" 2>"$work/py-listen.err" &)
 	sleep 3
-	"$root/bin/cantcp-cli" send --id 111 --data AABB >/dev/null 2>&1
+	"$root/bin/cantcp-cli" send --server "$listen_addr" --id 111 --data AABB >/dev/null 2>&1
 	# shellcheck disable=SC2086
-	$python_client send --id 222 --data CCDD >/dev/null 2>&1
+	$cmd send --id 222 --data CCDD >/dev/null 2>&1
 	sleep 2
 	if [ "$(wc -l <"$work/py-listen.json" 2>/dev/null || echo 0)" = 2 ]; then
-		record PASS python-interop "the Python client received frames from the Go client and itself"
+		record PASS "python-interop[$name]" "the client received frames from the Go CLI and itself"
 	else
-		record FAIL python-interop "the Python client received $(wc -l <"$work/py-listen.json" 2>/dev/null || echo 0)/2 frames"
+		record FAIL "python-interop[$name]" "the client received $(wc -l <"$work/py-listen.json" 2>/dev/null || echo 0)/2 frames"
 	fi
 	stop_server
-elif [ -z "$python_client" ]; then
-	record SKIP python-interop "no cantcp-lib-python virtualenv next to the checkout"
+done
+if [ "${#python_specs[@]}" -eq 0 ]; then
+	record SKIP python-interop "no Python client: set CANTCP_LIB_PYTHON or pass --python-client"
 fi
 
 # --- go client interop -----------------------------------------------------
 
 go_client=
-go_dir=$root/../cantcp-lib-go
+go_dir=${CANTCP_LIB_GO:-$root/../cantcp-lib-go}
 if [ -f "$go_dir/go.mod" ] && command -v go >/dev/null 2>&1; then
 	if (cd "$go_dir" && go build -o "$work/go-client" ./examples/client) >/dev/null 2>&1; then
 		go_client=$work/go-client

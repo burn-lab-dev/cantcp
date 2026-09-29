@@ -35,7 +35,10 @@ scripts/vcan-smoke.sh --report /tmp/cantcp-report
 ```
 
 The smoke script builds the binaries, runs the daemon on loopback ports and
-checks:
+checks (the Python interop runs once per client; `CANTCP_LIB_PYTHON` selects
+the library checkout, `--python-client "name=command"` gives explicit client
+commands, repeatable — the CI passes the library checkout and the published
+PyPI package):
 
 | Check | What it proves |
 |---|---|
