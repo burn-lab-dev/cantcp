@@ -52,7 +52,8 @@ unit:
 
 - runs as the system user `cantcp` with the single capability `CAP_NET_RAW`;
 - is sandboxed: `ProtectSystem=strict`, `ProtectHome=yes`, `PrivateTmp=yes`,
-  `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_CAN`,
+  `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK AF_CAN`
+  (netlink is needed to resolve the interface index),
   `NoNewPrivileges=yes`, `SystemCallFilter=@system-service @network-io`;
 - restarts on failure (`Restart=always`, `RestartSec=2s`);
 - reloads on `systemctl reload cantcpd` (`ExecReload` sends `SIGHUP`).
