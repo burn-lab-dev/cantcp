@@ -2,13 +2,17 @@
 # Smoke test of cantcpd on two physical CAN interfaces.
 #
 # Usage:
-#   scripts/hw-smoke.sh [--a can0] [--b can1] [--bitrate 500000] [--report DIR]
+#   scripts/hw-smoke.sh [--a can0] [--b can1] [--bitrate 500000] [--fd]
+#                       [--bin DIR] [--listen host:port] [--stats host:port]
+#                       [--report DIR]
 #
 # Wiring: both adapters must be on the same bus — the same twisted pair with
 # 120 Ohm terminators at both ends. `--a` is the interface the daemon serves;
 # `--b` is a second adapter used by candump/cangen to observe and to load the
 # bus. The interfaces must be up (the script prints the commands when they are
-# not) and support the requested bitrate.
+# not) and support the requested bitrate. Classic frames only by default;
+# --fd adds the CAN FD matrix and needs FD-capable adapters (MTU 72) at the
+# same bitrate. --bin points at the binaries to test (bin/ or /usr/bin).
 #
 # This is a hardware companion to scripts/vcan-smoke.sh: the virtual smoke
 # runs in CI, the hardware one is run manually (see docs/TESTING.md) and its
@@ -19,9 +23,15 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 iface_a=can0
 iface_b=can1
 bitrate=500000
+bindir=$root/bin
+listen_addr=127.0.0.1:29536
+stats_addr=127.0.0.1:29537
 report_dir=
+fd=0
 results=()
 server_pid=
+candump_pid=
+listen_pid=
 
 while [ $# -gt 0 ]; do
 	case $1 in
@@ -36,6 +46,22 @@ while [ $# -gt 0 ]; do
 	--bitrate)
 		bitrate=$2
 		shift 2
+		;;
+	--bin)
+		bindir=$2
+		shift 2
+		;;
+	--listen)
+		listen_addr=$2
+		shift 2
+		;;
+	--stats)
+		stats_addr=$2
+		shift 2
+		;;
+	--fd)
+		fd=1
+		shift
 		;;
 	--report)
 		report_dir=$2
@@ -54,11 +80,13 @@ done
 
 work=$(mktemp -d)
 cleanup() {
-	if [ -n "$server_pid" ]; then
-		kill "$server_pid" 2>/dev/null
-	fi
-	pkill -x cantcpd 2>/dev/null
-	pkill -x candump 2>/dev/null
+	# Kill only the processes this script started: a user daemon or a
+	# parallel test on the same machine must not be touched.
+	for pid in "$server_pid" "$candump_pid" "$listen_pid"; do
+		if [ -n "$pid" ]; then
+			kill "$pid" 2>/dev/null
+		fi
+	done
 	rm -rf "$work"
 }
 trap cleanup EXIT
@@ -77,19 +105,31 @@ require_up() {
 }
 require_up "$iface_a"
 require_up "$iface_b"
+if [ "$fd" = 1 ]; then
+	if [ "$(cat "/sys/class/net/$iface_a/mtu")" -lt 72 ] || [ "$(cat "/sys/class/net/$iface_b/mtu")" -lt 72 ]; then
+		echo "hw-smoke: --fd needs FD-capable interfaces (MTU 72)" >&2
+		exit 2
+	fi
+fi
 
-echo "== building the binaries"
-(cd "$root" && make build >/dev/null 2>&1) || {
-	echo "hw-smoke: make build failed" >&2
+if [ "$bindir" = "$root/bin" ]; then
+	echo "== building the binaries"
+	(cd "$root" && make build >/dev/null 2>&1) || {
+		echo "hw-smoke: make build failed" >&2
+		exit 2
+	}
+fi
+if [ ! -x "$bindir/cantcpd" ] || [ ! -x "$bindir/cantcp-cli" ]; then
+	echo "hw-smoke: no cantcpd/cantcp-cli in $bindir (use --bin DIR)" >&2
 	exit 2
-}
+fi
 
 start_server() {
-	setsid "$root/bin/cantcpd" --can "$iface_a" --listen 127.0.0.1:29536 \
-		--stats-listen 127.0.0.1:29537 </dev/null >"$work/server.log" 2>&1 &
+	setsid "$bindir/cantcpd" --can "$iface_a" --listen "$listen_addr" \
+		--stats-listen "$stats_addr" </dev/null >"$work/server.log" 2>&1 &
 	server_pid=$!
 	for _ in $(seq 1 50); do
-		curl -fsS --max-time 1 http://127.0.0.1:29537/healthz >/dev/null 2>&1 && return 0
+		curl -fsS --max-time 1 "http://$stats_addr/healthz" >/dev/null 2>&1 && return 0
 		sleep 0.1
 	done
 	cat "$work/server.log" >&2
@@ -97,31 +137,42 @@ start_server() {
 }
 
 # The frame matrix over the real bus: a client sends, the observer adapter
-# and the client itself must see every frame (the gateway loopback).
+# and the client itself must see every frame (the gateway loopback). Classic
+# frames by default; --fd adds the CAN FD set for FD-capable adapters.
 matrix="$work/matrix.txt"
-python3 - "$matrix" <<'PY'
+python3 - "$matrix" "$fd" <<'PY'
 import sys
 
-lines = ["123#1122334455667788", "7FF#R", "1ABCDE#DEADBEEF"]
-ids = ["123", "1ABCDE"]
-for i, n in enumerate([0, 8, 12, 16, 32, 64]):
-    data = bytes((j + i + 1) & 0xFF for j in range(n)).hex().upper()
-    lines.append(f"{ids[i % 2]}##{'1' if n else '0'}{data}")
+with_fd = sys.argv[2] == "1"
+lines = ["123#1122334455667788", "000#", "7FF#AA", "7FF#R", "1ABCDE#DEADBEEF"]
+for i in range(1, 9):
+    data = bytes((j + i) & 0xFF for j in range(i)).hex().upper()
+    lines.append(f"100#{data}")
+if with_fd:
+    ids = ["123", "1ABCDE"]
+    for i, n in enumerate([0, 8, 12, 16, 32, 64]):
+        data = bytes((j + i + 1) & 0xFF for j in range(n)).hex().upper()
+        lines.append(f"{ids[i % 2]}##{'1' if n else '0'}{data}")
 with open(sys.argv[1], "w") as handle:
     handle.write("\n".join(lines) + "\n")
 PY
 matrix_len=$(wc -l <"$matrix")
 
 if start_server; then
-	(timeout 30 candump "$iface_b" >"$work/candump.log" 2>&1 &)
-	(timeout 30 "$root/bin/cantcp-cli" listen --json --count "$matrix_len" >"$work/listen.json" 2>&1 &)
+	timeout 30 candump "$iface_b" >"$work/candump.log" 2>&1 &
+	candump_pid=$!
+	timeout 30 "$bindir/cantcp-cli" listen --json --count "$matrix_len" >"$work/listen.json" 2>&1 &
+	listen_pid=$!
 	sleep 2
 	while IFS= read -r frame_line; do
-		printf '%s\n' "$frame_line" | "$root/bin/cantcp-cli" send --input - >/dev/null 2>&1
+		printf '%s\n' "$frame_line" | "$bindir/cantcp-cli" send --input - >/dev/null 2>&1
 		sleep 0.02
 	done <"$matrix"
 	sleep 3
-	pkill -x candump 2>/dev/null
+	kill "$candump_pid" 2>/dev/null
+	candump_pid=
+	kill "$listen_pid" 2>/dev/null
+	listen_pid=
 	seen=$(wc -l <"$work/listen.json" 2>/dev/null || echo 0)
 	bus=$(wc -l <"$work/candump.log" 2>/dev/null || echo 0)
 	if [ "$seen" = "$matrix_len" ] && [ "$bus" = "$matrix_len" ]; then
@@ -133,7 +184,8 @@ if start_server; then
 	# Moderate load from the observer adapter: every frame must arrive at the
 	# client complete, unique and in order.
 	load=1000
-	(timeout 60 "$root/bin/cantcp-cli" listen --json --count "$load" >"$work/load.json" 2>&1 &)
+	timeout 60 "$bindir/cantcp-cli" listen --json --count "$load" >"$work/load.json" 2>&1 &
+	listen_pid=$!
 	sleep 0.5
 	cangen "$iface_b" -g 2 -I 321 -n "$load" >/dev/null 2>&1
 	sleep 4

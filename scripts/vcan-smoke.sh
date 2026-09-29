@@ -20,6 +20,8 @@ set -uo pipefail
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 iface=vcan0
+listen_addr=127.0.0.1:29536
+stats_addr=127.0.0.1:29537
 report_dir=
 keep=0
 
@@ -27,6 +29,14 @@ while [ $# -gt 0 ]; do
 	case $1 in
 	--iface)
 		iface=$2
+		shift 2
+		;;
+	--listen)
+		listen_addr=$2
+		shift 2
+		;;
+	--stats)
+		stats_addr=$2
 		shift 2
 		;;
 	--report)
@@ -50,15 +60,18 @@ done
 
 work=$(mktemp -d)
 server_pid=
+candump_pid=
+listen_pid=
 results=()
 
 cleanup() {
-	if [ -n "$server_pid" ]; then
-		kill "$server_pid" 2>/dev/null
-	fi
-	pkill -x cantcpd 2>/dev/null
-	pkill -x cantcp-cli 2>/dev/null
-	pkill -x candump 2>/dev/null
+	# Kill only the processes this script started: a user daemon or a
+	# parallel test on the same machine must not be touched.
+	for pid in "$server_pid" "$candump_pid" "$listen_pid"; do
+		if [ -n "$pid" ]; then
+			kill "$pid" 2>/dev/null
+		fi
+	done
 	if [ "$keep" = 1 ]; then
 		echo "artifacts kept in $work"
 	else
@@ -75,11 +88,11 @@ record() {
 
 # start_server <extra flags...>; waits until the statistics endpoint answers.
 start_server() {
-	setsid "$root/bin/cantcpd" --can "$iface" --listen 127.0.0.1:29536 \
-		--stats-listen 127.0.0.1:29537 "$@" </dev/null >"$work/server.log" 2>&1 &
+	setsid "$root/bin/cantcpd" --can "$iface" --listen "$listen_addr" \
+		--stats-listen "$stats_addr" "$@" </dev/null >"$work/server.log" 2>&1 &
 	server_pid=$!
 	for _ in $(seq 1 50); do
-		if curl -fsS --max-time 1 http://127.0.0.1:29537/healthz >/dev/null 2>&1; then
+		if curl -fsS --max-time 1 "http://$stats_addr/healthz" >/dev/null 2>&1; then
 			return 0
 		fi
 		sleep 0.1
@@ -98,7 +111,7 @@ stop_server() {
 }
 
 stats() {
-	curl -fsS --max-time 3 http://127.0.0.1:29537/api/v1/stats
+	curl -fsS --max-time 3 "http://$stats_addr/api/v1/stats"
 }
 
 # --- preflight -------------------------------------------------------------
@@ -125,8 +138,9 @@ fi
 
 python_client=
 python_dir=$root/../cantcp-lib-python
+listen_port=${listen_addr##*:}
 if [ -x "$python_dir/.venv/bin/python3" ] && [ -f "$python_dir/examples/client.py" ]; then
-	python_client="$python_dir/.venv/bin/python3 $python_dir/examples/client.py"
+	python_client="$python_dir/.venv/bin/python3 $python_dir/examples/client.py --host 127.0.0.1 --port $listen_port"
 fi
 
 # --- frame matrix ----------------------------------------------------------
@@ -156,26 +170,77 @@ if ! command -v candump >/dev/null 2>&1; then
 elif start_server; then
 	# candump runs without -n: it starts asynchronously, so the check waits
 	# and then counts the lines instead of racing the first frames.
-	(timeout 30 candump "$iface" >"$work/candump.log" 2>&1 &)
-	(timeout 20 "$root/bin/cantcp-cli" listen --json --count "$matrix_len" \
-		>"$work/listen.json" 2>"$work/listen.err" &)
+	timeout 30 candump "$iface" >"$work/candump.log" 2>&1 &
+	candump_pid=$!
+	# The listener runs without --count: on a shared bus unrelated frames may
+	# arrive, so the check compares the frames, not the line count.
+	timeout 25 "$root/bin/cantcp-cli" listen --server "$listen_addr" --json \
+		>"$work/listen.json" 2>"$work/listen.err" &
+	listen_pid=$!
 	sleep 2
 	# Send one frame at a time with a small gap: an instantaneous burst of
 	# frames overruns the vcan buffers on slow CI runners (a real CAN bus at
 	# 125k..1M cannot produce such rates either).
 	while IFS= read -r frame_line; do
-		printf '%s\n' "$frame_line" | "$root/bin/cantcp-cli" send --input - >/dev/null 2>&1
+		printf '%s\n' "$frame_line" | "$root/bin/cantcp-cli" send --server "$listen_addr" --input - >/dev/null 2>&1
 		sleep 0.01
 	done <"$matrix"
-	sleep 2
-	pkill -x candump 2>/dev/null
-	seen=$(wc -l <"$work/listen.json" 2>/dev/null || echo 0)
-	bus=$(wc -l <"$work/candump.log" 2>/dev/null || echo 0)
-	if [ "$seen" = "$matrix_len" ] && [ "$bus" = "$matrix_len" ]; then
+	# Wait until every matrix frame is visible to both the client and candump.
+	missing=""
+	for _ in $(seq 1 50); do
+		missing=$(python3 - "$matrix" "$work/listen.json" "$work/candump.log" <<'PY'
+import json
+import sys
+
+matrix, listen_path, dump_path = sys.argv[1], sys.argv[2], sys.argv[3]
+expected = []
+for line in open(matrix):
+    line = line.strip()
+    if not line:
+        continue
+    if "##" in line:
+        ident, rest = line.split("##", 1)
+        expected.append((int(ident, 16), rest[1:].lower()))
+    elif "#" in line:
+        ident, data = line.split("#", 1)
+        expected.append((int(ident, 16), "" if data in ("R", "r") else data.lower()))
+
+try:
+    listen = {json.loads(line)["id"]: json.loads(line)["data"].lower() for line in open(listen_path)}
+except (OSError, ValueError):
+    listen = {}
+bus = []
+try:
+    for line in open(dump_path):
+        fields = line.split()
+        if len(fields) < 2:
+            continue
+        try:
+            ident = int(fields[1], 16)
+        except ValueError:
+            continue
+        data = "".join(fields[3:]).lower()
+        bus.append((ident, "" if data in ("r",) else data))
+except OSError:
+    pass
+
+missing = [f"{ident:X}#{data}" for ident, data in expected if listen.get(ident) != data and (ident, data) not in bus]
+print(" ".join(missing))
+PY
+)
+		if [ -z "$missing" ]; then
+			break
+		fi
+		sleep 0.3
+	done
+	kill "$candump_pid" 2>/dev/null
+	candump_pid=
+	kill "$listen_pid" 2>/dev/null
+	listen_pid=
+	if [ -z "$missing" ]; then
 		record PASS matrix "$matrix_len frames of the matrix echoed to the client and seen on the bus"
 	else
-		hint=$(tail -1 "$work/candump.log" 2>/dev/null | cut -c1-70)
-		record FAIL matrix "client got $seen/$matrix_len, bus saw $bus/$matrix_len (${hint:-no candump output})"
+		record FAIL matrix "frames missing on the client or the bus: $missing"
 	fi
 	stop_server
 else
@@ -205,7 +270,7 @@ fi
 # --- rate limit ------------------------------------------------------------
 
 if start_server --max-frames-per-second 10; then
-	"$root/bin/cantcp-cli" send --id 100 --data 01 --count 100 --interval 2ms >/dev/null 2>&1
+	"$root/bin/cantcp-cli" send --server "$listen_addr" --id 100 --data 01 --count 100 --interval 2ms >/dev/null 2>&1
 	sleep 0.5
 	dropped=$(stats | python3 -c 'import json,sys; print(json.load(sys.stdin)["tcp"]["dropped"])')
 	if [ "$dropped" -ge 80 ]; then
@@ -222,7 +287,7 @@ fi
 
 if start_server --idle-timeout 1s; then
 	start=$(date +%s)
-	timeout 6 "$root/bin/cantcp-cli" listen --count 1 >/dev/null 2>&1
+	timeout 6 "$root/bin/cantcp-cli" listen --server "$listen_addr" --count 1 >/dev/null 2>&1
 	code=$?
 	elapsed=$(( $(date +%s) - start ))
 	if [ "$code" -eq 0 ] && [ "$elapsed" -le 3 ]; then
@@ -238,9 +303,9 @@ fi
 # --- max connections -------------------------------------------------------
 
 if start_server --max-connections 1; then
-	(timeout 5 "$root/bin/cantcp-cli" listen --count 1 >/dev/null 2>&1 &)
+	(timeout 5 "$root/bin/cantcp-cli" listen --server "$listen_addr" --count 1 >/dev/null 2>&1 &)
 	sleep 1
-	timeout 5 "$root/bin/cantcp-cli" listen --count 1 >/dev/null 2>&1
+	timeout 5 "$root/bin/cantcp-cli" listen --server "$listen_addr" --count 1 >/dev/null 2>&1
 	code=$?
 	if [ "$code" -eq 0 ]; then
 		record PASS max-connections "the second client was rejected and closed"
@@ -278,10 +343,10 @@ tls_flags=(--tls-cert "$tls/server.pem" --tls-key "$tls/server-key.pem" --tls-ca
 client_flags=(--tls --tls-ca "$tls/ca.pem" --tls-cert "$tls/client.pem" --tls-key "$tls/client-key.pem")
 
 if start_server "${tls_flags[@]}"; then
-	(timeout 20 "$root/bin/cantcp-cli" listen "${client_flags[@]}" --json --count 1 \
-		>"$work/tls-listen.json" 2>"$work/tls-listen.err" &)
+	(timeout 20 "$root/bin/cantcp-cli" listen --server "$listen_addr" "${client_flags[@]}" \
+		--id 7A5 --mask 7FF --json --count 1 >"$work/tls-listen.json" 2>"$work/tls-listen.err" &)
 	sleep 1
-	"$root/bin/cantcp-cli" send "${client_flags[@]}" --id 7A5 --data CAFE >/dev/null 2>&1
+	"$root/bin/cantcp-cli" send --server "$listen_addr" "${client_flags[@]}" --id 7A5 --data CAFE >/dev/null 2>&1
 	sleep 1.5
 	if grep -q '"data":"cafe"' "$work/tls-listen.json" 2>/dev/null; then
 		record PASS tls-mtls "the mutual-TLS exchange delivered the frame"
@@ -289,7 +354,7 @@ if start_server "${tls_flags[@]}"; then
 		record FAIL tls-mtls "the frame did not arrive over mutual TLS"
 	fi
 
-	legacy=$(echo | timeout 5 openssl s_client -connect 127.0.0.1:29536 -tls1_2 \
+	legacy=$(echo | timeout 5 openssl s_client -connect "$listen_addr" -tls1_2 \
 		-CAfile "$tls/ca.pem" 2>&1 | grep -c "alert protocol version")
 	if [ "$legacy" -ge 1 ]; then
 		record PASS tls-version "TLS 1.2 was rejected with a protocol alert"
@@ -297,7 +362,7 @@ if start_server "${tls_flags[@]}"; then
 		record FAIL tls-version "TLS 1.2 was not rejected"
 	fi
 
-	serial_before=$(echo | timeout 5 openssl s_client -connect 127.0.0.1:29536 -tls1_3 \
+	serial_before=$(echo | timeout 5 openssl s_client -connect "$listen_addr" -tls1_3 \
 		-CAfile "$tls/ca.pem" -cert "$tls/client.pem" -key "$tls/client-key.pem" 2>/dev/null \
 		| openssl x509 -noout -serial)
 	(
@@ -311,7 +376,7 @@ if start_server "${tls_flags[@]}"; then
 	)
 	kill -HUP "$server_pid"
 	sleep 1
-	serial_after=$(echo | timeout 5 openssl s_client -connect 127.0.0.1:29536 -tls1_3 \
+	serial_after=$(echo | timeout 5 openssl s_client -connect "$listen_addr" -tls1_3 \
 		-CAfile "$tls/ca.pem" -cert "$tls/client.pem" -key "$tls/client-key.pem" 2>/dev/null \
 		| openssl x509 -noout -serial)
 	if [ -n "$serial_after" ] && [ "$serial_before" != "$serial_after" ]; then
