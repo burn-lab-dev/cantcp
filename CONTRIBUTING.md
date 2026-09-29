@@ -55,6 +55,14 @@ Without `vcan0` the socketcan and e2e tests skip themselves, so `go test
 - fuzz tests for parsers (the candump parser already has one);
 - no frame payloads in logs, ever.
 
+## Confidentiality
+
+Everything in this repository is public: documentation, test reports, issues
+and pull request texts. Keep them generic — do not name employers, customers,
+their products, devices, people or locations. Describe environments as, for
+example, "an aarch64 board running Ubuntu 22.04" instead of a concrete
+product, and redact addresses and keys before pasting logs.
+
 ## Pull requests
 
 1. Fork the repository and create a branch (`feat/tls-reload`).
