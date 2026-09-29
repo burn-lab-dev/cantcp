@@ -25,3 +25,6 @@ long.
 | Report | Environment |
 |---|---|
 | [2026-09-28-vcan-smoke.md](2026-09-28-vcan-smoke.md) | virtual bus (vcan0, MTU 72), first full run |
+| [2026-09-29-hardware.md](2026-09-29-hardware.md) | two PCAN-USB adapters, one bus, 125k–1000k, the packaged service and APT binaries |
+| [2026-09-29-arm-bpu2.md](2026-09-29-arm-bpu2.md) | BPU2 (aarch64, Ubuntu 22.04), arm64 package from the repository, vcan |
+| [2026-09-29-soak.md](2026-09-29-soak.md) | 60-minute soak on vcan0, resource and stability control |

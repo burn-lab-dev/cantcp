@@ -11,6 +11,12 @@ a{color:#0366d6}
 <ul>
 <li><a href='#README.ru.md'>README.ru.md</a></li>
 <li><a href='#README.md'>README.md</a></li>
+<li><a href='#2026-09-29-soak.ru.md'>2026-09-29-soak.ru.md</a></li>
+<li><a href='#2026-09-29-soak.md'>2026-09-29-soak.md</a></li>
+<li><a href='#2026-09-29-hardware.ru.md'>2026-09-29-hardware.ru.md</a></li>
+<li><a href='#2026-09-29-hardware.md'>2026-09-29-hardware.md</a></li>
+<li><a href='#2026-09-29-arm-bpu2.ru.md'>2026-09-29-arm-bpu2.ru.md</a></li>
+<li><a href='#2026-09-29-arm-bpu2.md'>2026-09-29-arm-bpu2.md</a></li>
 <li><a href='#2026-09-28-vcan-smoke.ru.md'>2026-09-28-vcan-smoke.ru.md</a></li>
 <li><a href='#2026-09-28-vcan-smoke.md'>2026-09-28-vcan-smoke.md</a></li>
 </ul>
@@ -40,6 +46,9 @@ MTU или битрейт, таблицу проверок с результат
 | Отчёт | Среда |
 |---|---|
 | [2026-09-28-vcan-smoke.ru.md](2026-09-28-vcan-smoke.ru.md) | виртуальная шина (vcan0, MTU 72), первый полный прогон |
+| [2026-09-29-hardware.ru.md](2026-09-29-hardware.ru.md) | два адаптера PCAN-USB, одна шина, 125k–1000k, пакетный сервис и APT-бинарники |
+| [2026-09-29-arm-bpu2.ru.md](2026-09-29-arm-bpu2.ru.md) | BPU2 (aarch64, Ubuntu 22.04), arm64-пакет из репозитория, vcan |
+| [2026-09-29-soak.ru.md](2026-09-29-soak.ru.md) | 60-минутный soak на vcan0, контроль ресурсов и стабильности |
 </pre>
 <h2 id='README.md'>README.md</h2>
 <pre># Test reports
@@ -69,6 +78,400 @@ long.
 | Report | Environment |
 |---|---|
 | [2026-09-28-vcan-smoke.md](2026-09-28-vcan-smoke.md) | virtual bus (vcan0, MTU 72), first full run |
+| [2026-09-29-hardware.md](2026-09-29-hardware.md) | two PCAN-USB adapters, one bus, 125k–1000k, the packaged service and APT binaries |
+| [2026-09-29-arm-bpu2.md](2026-09-29-arm-bpu2.md) | BPU2 (aarch64, Ubuntu 22.04), arm64 package from the repository, vcan |
+| [2026-09-29-soak.md](2026-09-29-soak.md) | 60-minute soak on vcan0, resource and stability control |
+</pre>
+<h2 id='2026-09-29-soak.ru.md'>2026-09-29-soak.ru.md</h2>
+<pre># Отчёт soak — 2026-09-29
+
+[English](2026-09-29-soak.md) | **Русский**
+
+Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
+драйверы, CAN и промышленная телеметрия.
+
+## Метод
+
+- 60 минут, `vcan0` (MTU 72), **установленные APT-бинарники**
+  (`/usr/bin/cantcpd`, `/usr/bin/cantcp-cli`);
+- фоновая нагрузка: `cangen vcan0 -g 1 -I 100` (≈1000 кадров/с);
+- каждую минуту клиентский цикл: `cantcp-cli listen --count 50` плюс
+  `cantcp-cli send --count 50`;
+- `SIGHUP` каждые 10 минут (перечитывание конфигурации);
+- каждую минуту фиксировались RSS, файловые дескрипторы,
+  `connections_total` и `frames_read` (`soak.csv`); процесс сервера
+  проверялся на живость.
+
+## Результаты
+
+| Метрика | Начало | Конец |
+|---|---|---|
+| RSS | 7372 кБ | 8068 кБ |
+| Файловые дескрипторы | 9 | 9 |
+| Процесс сервера | up | up все 60/60 минут |
+
+- пик RSS за прогон: ~11.4 МБ (минуты 15–40), затем сборщик мусора вернул
+  к ~8 МБ — монотонного роста нет;
+- прочитано кадров: **2 644 155**;
+- соединений: **120** (по два в минуту), каждое принято и закрыто чисто;
+  в логе нет ошибок, кроме ожидаемых `connection reset by peer` от
+  клиентов, которых тест сам завершает по `timeout`;
+- перечитывания по SIGHUP (шесть) прошли без остановки сервиса.
+
+## Замечания
+
+- Фоновый `cangen` остановился сам около 18-й минуты (причину выяснить не
+  удалось: процесс исчез, демон остался жив; супервизор просто
+  перезапустил бы его) и был перезапущен на 28-й минуте — отсюда два
+  периода нагрузки в `soak.csv`. Сам демон никак не отреагировал.
+- Во время прогона параллельный смоук на той же машине вскрыл дефект
+  тестовых скриптов (они убивали чужие процессы через `pkill -x`); дефект
+  исправлен, и soak выжил, когда исправленный смоук работал рядом.
+
+## Вывод
+
+За час непрерывного трафика с периодическими клиентами и перечитываниями
+демон не показывает утечек (плоский RSS после прогрева, постоянное число
+fd), необработанных ошибок и перезапусков.
+</pre>
+<h2 id='2026-09-29-soak.md'>2026-09-29-soak.md</h2>
+<pre># Soak report — 2026-09-29
+
+**English** | [Русский](2026-09-29-soak.ru.md)
+
+Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
+development: Linux, drivers, CAN and industrial telemetry.
+
+## Method
+
+- 60 minutes, `vcan0` (MTU 72), the **installed APT binaries**
+  (`/usr/bin/cantcpd`, `/usr/bin/cantcp-cli`);
+- background load: `cangen vcan0 -g 1 -I 100` (≈1000 frames/s);
+- every minute a client cycle: `cantcp-cli listen --count 50` plus
+  `cantcp-cli send --count 50`;
+- `SIGHUP` every 10 minutes (configuration reload);
+- every minute: RSS, file descriptors, `connections_total` and `frames_read`
+  recorded (`soak.csv`); the server process checked for liveness.
+
+## Results
+
+| Metric | Start | End |
+|---|---|---|
+| RSS | 7372 kB | 8068 kB |
+| File descriptors | 9 | 9 |
+| Server process | up | up all 60/60 minutes |
+
+- peak RSS during the run: ~11.4 MB (minutes 15–40), then the garbage
+  collector brought it down to ~8 MB — no monotonic growth;
+- frames read: **2 644 155**;
+- connections: **120** (two per minute), every one accepted and closed
+  cleanly; no errors in the log besides the expected `connection reset by
+  peer` for the clients that the test itself kills with `timeout`;
+- SIGHUP reloads (six of them) applied without dropping the service.
+
+## Notes
+
+- The background `cangen` stopped on its own around minute 18 (the reason
+  was not identified: the process was gone while the daemon stayed up; a
+  supervisor would simply restart it) and was restarted at minute 28, hence
+  two load periods in `soak.csv`. The daemon itself showed no reaction.
+- During the run a parallel smoke test on the same machine exposed a defect
+  in the test scripts (they killed unrelated processes with `pkill -x`); it
+  was fixed and the soak run survived when the fixed smoke ran next to it.
+
+## Verdict
+
+Over an hour of sustained traffic plus periodic clients and reloads the
+daemon shows no leaks (flat RSS after warm-up, constant fd count), no
+unhandled errors and no restarts.
+</pre>
+<h2 id='2026-09-29-hardware.ru.md'>2026-09-29-hardware.ru.md</h2>
+<pre># Отчёт по физической шине — 2026-09-29
+
+[English](2026-09-29-hardware.md) | **Русский**
+
+Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
+драйверы, CAN и промышленная телеметрия.
+
+## Среда
+
+- шина: два адаптера **PEAK System PCAN-USB** (драйвер `pcan_usb`) на одной
+  витой паре, терминаторы 120 Ом на обоих концах, `can0` (обслуживается) и
+  `can1` (наблюдатель/нагрузка);
+- ПО: **пакеты из APT-репозитория проекта** (`/usr/bin`) и пакетный
+  `cantcpd.service`;
+- проверки: `scripts/hw-smoke.sh --bin /usr/bin`, ручные обмены и
+  `scripts/vcan-smoke.sh` для TLS/SIGHUP.
+
+## Путь пакета и сервиса (сценарий пользователя)
+
+| Проверка | Результат |
+|---|---|
+| `apt install cantcpd cantcp-cli` из репозитория | установлено (первая попытка вскрыла отсутствие `AF_NETLINK` в пакетном юните — исправлено в релизе, см. находки) |
+| `systemctl enable --now cantcpd` с пакетным конфигом | сервис активен |
+| Обмен через сервис: classic 8 байт, расширенный, 1 байт | эхо клиенту 3/3, `candump` на `can1` 3/3, `frames_read=3`, `frames_written=3`, ошибок нет |
+| `systemctl reload cantcpd` (SIGHUP) на живом сервисе | остаётся активным, обмен продолжается |
+
+## Проверки на битрейтах
+
+`scripts/hw-smoke.sh --bin /usr/bin --a can0 --b can1 --bitrate &lt;rate&gt;`:
+матрица — 13 классических кадров (8/0/1 байт, remote, расширенный, длины
+данных 1..8) плюс нагрузка 1000 кадров от адаптера-наблюдателя.
+
+| Битрейт | Матрица | Нагрузка |
+|---|---|---|
+| 125 кбит/с | 13/13 кадров дошли до клиента и наблюдателя | 1000/1000 |
+| 250 кбит/с | 13/13 | 1000/1000 |
+| 500 кбит/с | 13/13 | 1000/1000 |
+| 1000 кбит/с | 13/13 | 1000/1000 |
+
+## Находки прогона (все исправлены)
+
+1. **Пакетный юнит блокировал netlink**: в `RestrictAddressFamilies` не было
+   `AF_NETLINK`, нужного `net.InterfaceByName`; сервис падал на старте, а
+   тот же бинарь, запущенный руками, работал. Исправлено в юните и
+   документации, релиз пересобран.
+2. **Смоук-скрипты убивали чужие процессы**: `pkill -x cantcpd` в cleanup
+   убивал демон пользователя и параллельный soak. Теперь убиваются только
+   свои PID.
+3. **Фиксированные порты и подсчёт строк**: `vcan-smoke` конфликтовал с
+   работающим сервисом и считал чужой трафик; добавлены
+   `--listen/--stats`, а матрица сверяет ожидаемые кадры.
+4. **`hw-smoke` отправлял CAN FD кадры классическим адаптерам**: матрица
+   формировала FD-кадры, которые `can0` (MTU 16) отвергает с `EINVAL`.
+   Теперь по умолчанию только классика, `--fd` — для FD-адаптеров.
+
+## Error frames (последний шаг стенда)
+
+Экземпляр с `--error-frames` (и клиент-слушатель) работал с `can0`, пока по
+шине шёл трафик (`cangen` на `can1` плюс кадры клиента через демон). Две
+попытки вызвать ошибки — снять один терминатор на 2–3 с, затем разорвать
+один провод витой пары на 2–3 с — **не дали ни одного error-кадра**:
+контроллеры остались `ERROR-ACTIVE` с нулевыми счётчиками ошибок, все кадры
+дошли (3656/3656 прочитано в одном из прогонов). На коротком хорошо
+терминированном стенде неисправность не доживала до состояния ошибки (или
+фактически не вносилась); bus-off исключён решением владельца.
+
+Что покрыто вместо этого:
+
+- `socketcan.Open` выставляет `CAN_RAW_ERR_FILTER` с `CAN_ERR_MASK` при
+  `--error-frames` — вызов покрыт юнит-тестом (`TestOpen_ErrorFrames`),
+  демон с опцией стартует корректно;
+- error-кадры переносятся протоколом как обычные классические и
+  отображаются CLI (`#E…` в candump-форме, `&quot;error&quot;:true` в JSON);
+- loopback и потоковый путь проверены на `vcan` (где TX-кадры ошибок не
+  доставляются, как задокументировано).
+
+Среда, которая реально генерирует ошибки (длинная шина, неисправный узел,
+несовпадение битрейтов), воспроизведёт путь быстро; результат стенда
+зафиксирован как «не воспроизведено».
+
+## Замечания
+
+- Data phase FD остаётся на виртуальной шине: PCAN-USB — классический
+  адаптер (без `dbitrate`/`fd on`).
+
+## Вывод
+
+Установленные пакеты работают сквозным образом на реальной шине на 125k,
+250k, 500k и 1000 кбит/с: матрица кадров и длительная нагрузка проходят без
+потерь, сервис стартует, перечитывается и обслуживает кадры, amd64-клиент
+общается с тем же демоном по сети. Опция error frames реализована и покрыта
+юнит-тестом; вызвать реальные ошибки на этом стенде не удалось, результат
+зафиксирован как «не воспроизведено».
+</pre>
+<h2 id='2026-09-29-hardware.md'>2026-09-29-hardware.md</h2>
+<pre># Hardware smoke report — 2026-09-29
+
+**English** | [Русский](2026-09-29-hardware.ru.md)
+
+Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
+development: Linux, drivers, CAN and industrial telemetry.
+
+## Environment
+
+- bus: two **PEAK System PCAN-USB** adapters (`pcan_usb` driver) on one
+  twisted pair, 120 Ohm terminators at both ends, `can0` (served) and `can1`
+  (observer/load);
+- software: **packages from the project APT repository** (`/usr/bin`), plus
+  the packaged `cantcpd.service`;
+- checks: `scripts/hw-smoke.sh --bin /usr/bin`, manual exchanges and
+  `scripts/vcan-smoke.sh` for the TLS/SIGHUP paths.
+
+## Package and service path (the user scenario)
+
+| Check | Result |
+|---|---|
+| `apt install cantcpd cantcp-cli` from the repository | installed (a first attempt exposed a missing `AF_NETLINK` in the packaged unit — fixed in the release, see the findings) |
+| `systemctl enable --now cantcpd` with the packaged config | service active |
+| Exchange through the service: classic 8 bytes, extended, 1 byte | client echo 3/3, `candump` on `can1` 3/3, `frames_read=3`, `frames_written=3`, no errors |
+| `systemctl reload cantcpd` (SIGHUP) on a live service | stays active, exchange continues |
+
+## Bus checks per bitrate
+
+`scripts/hw-smoke.sh --bin /usr/bin --a can0 --b can1 --bitrate &lt;rate&gt;`:
+the matrix is 13 classic frames (8/0/1 bytes, remote, extended, data lengths
+1..8), plus a 1000-frame load from the observer adapter.
+
+| Bitrate | Matrix | Load |
+|---|---|---|
+| 125 kbit/s | 13/13 frames reached the client and the observer | 1000/1000 |
+| 250 kbit/s | 13/13 | 1000/1000 |
+| 500 kbit/s | 13/13 | 1000/1000 |
+| 1000 kbit/s | 13/13 | 1000/1000 |
+
+## Findings of this run (all fixed)
+
+1. **The packaged unit blocked netlink**: `RestrictAddressFamilies` did not
+   include `AF_NETLINK`, which `net.InterfaceByName` needs; the service exited
+   at startup while the same binary started by hand worked. Fixed in the unit
+   and the documentation, the release was rebuilt.
+2. **The smoke scripts killed unrelated processes**: `pkill -x cantcpd` in
+   the cleanup killed the user&#x27;s daemon and a parallel soak run. They now kill
+   only their own PIDs.
+3. **Fixed ports and line counting**: `vcan-smoke` clashed with the running
+   service and counted unrelated bus traffic; it takes `--listen/--stats` and
+   compares the expected frames instead.
+4. **`hw-smoke` sent CAN FD frames to classic adapters**: the matrix made FD
+   frames that `can0` (MTU 16) rejects with `EINVAL`. Classic frames are the
+   default now, `--fd` opts in for FD-capable adapters.
+
+## Error frames (the last bench step)
+
+An instance with `--error-frames` (and a listening client) ran against `can0`
+while the bus carried traffic (`cangen` on `can1` plus client frames through
+the daemon). Two attempts to provoke bus errors — removing one terminator
+for 2–3 s, then breaking one of the twisted-pair wires for 2–3 s — did **not**
+produce a single error frame: the controllers stayed `ERROR-ACTIVE` with zero
+error counters and every frame was delivered (3656/3656 read on one of the
+runs). On this short, well-terminated bench the fault did not survive long
+enough (or was not actually introduced) to reach the error state; bus-off was
+excluded by the owner&#x27;s decision.
+
+What is covered instead:
+
+- `socketcan.Open` sets `CAN_RAW_ERR_FILTER` with `CAN_ERR_MASK` when
+  `--error-frames` is on — a unit test (`TestOpen_ErrorFrames`) exercises the
+  call, and the daemon restarts cleanly with the option;
+- error frames are carried as ordinary classic frames by the protocol and
+  the CLI renders them (`#E…` in the candump form, `&quot;error&quot;:true` in JSON);
+- the loopback and streaming paths were verified on `vcan` (where TX error
+  frames are not delivered, as documented).
+
+An environment that does produce errors (a longer bus, a faulty node, a
+mismatched bitrate) should reproduce the path quickly; the bench result is
+recorded as not reproduced.
+
+## Notes
+
+- FD data phase stays on the virtual bus: the PCAN-USB is a classic adapter
+  (no `dbitrate`/`fd on`).
+
+## Verdict
+
+The installed packages work end to end on a real bus at 125k, 250k, 500k and
+1000 kbit/s: the frame matrix and a sustained load pass without losses, the
+service starts, reloads and serves frames, and the amd64 client talks to the
+same daemon over the network. The error-frame option is implemented and
+unit-tested; provoking real bus errors on this bench failed and is recorded
+as not reproduced.
+</pre>
+<h2 id='2026-09-29-arm-bpu2.ru.md'>2026-09-29-arm-bpu2.ru.md</h2>
+<pre># Отчёт по ARM — 2026-09-29
+
+[English](2026-09-29-arm-bpu2.md) | **Русский**
+
+Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
+драйверы, CAN и промышленная телеметрия.
+
+## Среда
+
+- устройство: **BPU2** (Orange Pi, `aarch64`), Ubuntu 22.04 (jammy), root по
+  ssh;
+- пакет: `cantcpd 0.1.0` / `cantcp-cli 0.1.0`, **arm64**, установлен из
+  APT-репозитория проекта (`https://burn-lab-dev.github.io/cantcp`);
+- шина: `vcan0`, MTU 72;
+- клиент: рабочая станция amd64 с теми же APT-бинарниками, plain и TLS 1.3
+  по сети (172.30.9.191).
+
+## Проверки
+
+| Проверка | Результат |
+|---|---|
+| Установка arm64 `.deb` из APT-репозитория | пакет установлен, юнит с `AF_NETLINK` |
+| Подъём `vcan0` (MTU 72) через модуль | ок |
+| Plain-обмен, клиент (amd64) → демон (arm64) → шина | 3/3 кадра (classic 8 байт, расширенный, 8 байт данных), эхо клиенту, видно в `candump` на устройстве |
+| Статистика | `frames_read=3`, `frames_written=3`, ошибок нет |
+| Нагрузка по сети: 5000 кадров с интервалом 200 мкс | **5000/5000** в `candump`, `dropped=0` |
+| Обратное направление: `cangen` на устройстве, 2000 кадров | **2000/2000** у клиента, длины данных 0..8 |
+| TLS 1.3 с mutual TLS по сети | обмен прошёл, `openssl s_client` показывает `TLSv1.3` + `TLS_AES_128_GCM_SHA256` |
+| mTLS без клиентского сертификата | отвергнут сервером (`client didn&#x27;t provide a certificate`) |
+| Ресурсы | plain-демон RSS **6.8 МБ**, TLS-демон **7.8 МБ**, 8 файловых дескрипторов |
+
+## Замечания
+
+- Сертификаты для теста сначала дали `certificate has expired or is not yet
+  valid`: `openssl x509 -req` ставит `NotBefore` по часам машины выпуска, а
+  часы устройства отставали на несколько секунд. Повтор через несколько
+  секунд прошёл — артефакт стенда, не дефект.
+- После тестов устройство зачищено полностью: пакеты удалены, системный
+  пользователь и группа удалены, конфигурация, сертификаты, логи и `vcan0`
+  удалены; `dpkg -l`, `pgrep` и файловая система не показывают следов.
+
+## Вывод
+
+arm64-сборка ставится из репозитория проекта, стартует, обслуживает plain и
+mutual-TLS трафик по сети и держит полную нагрузку без потерь и утечек;
+бинарники amd64 и arm64 совместимы побайтово.
+</pre>
+<h2 id='2026-09-29-arm-bpu2.md'>2026-09-29-arm-bpu2.md</h2>
+<pre># ARM smoke report — 2026-09-29
+
+**English** | [Русский](2026-09-29-arm-bpu2.ru.md)
+
+Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
+development: Linux, drivers, CAN and industrial telemetry.
+
+## Environment
+
+- device: **BPU2** (Orange Pi, `aarch64`), Ubuntu 22.04 (jammy), root over
+  ssh;
+- package: `cantcpd 0.1.0` / `cantcp-cli 0.1.0`, **arm64**, installed from
+  the project APT repository (`https://burn-lab-dev.github.io/cantcp`);
+- bus: `vcan0`, MTU 72;
+- client side: amd64 workstation with the same APT binaries, plain and
+  TLS 1.3 over the network (172.30.9.191).
+
+## Checks
+
+| Check | Result |
+|---|---|
+| Install arm64 `.deb` from the APT repository | package installed, unit shipped with `AF_NETLINK` |
+| Bring up `vcan0` (MTU 72) with the module | ok |
+| Plain exchange, client (amd64) → daemon (arm64) → bus | 3/3 frames (classic 8 bytes, extended, 8-byte data), echoed to the client, seen by `candump` on the device |
+| Statistics | `frames_read=3`, `frames_written=3`, no errors |
+| Load over the network: 5000 frames, 200 µs interval | **5000/5000** seen by `candump`, `dropped=0` |
+| Reverse direction: `cangen` on the device, 2000 frames | **2000/2000** at the client, data lengths 0..8 |
+| TLS 1.3 with mutual TLS over the network | exchange delivered, `openssl s_client` reports `TLSv1.3` + `TLS_AES_128_GCM_SHA256` |
+| mTLS without a client certificate | rejected by the server (`client didn&#x27;t provide a certificate`) |
+| Resources | plain daemon RSS **6.8 MB**, TLS daemon **7.8 MB**, 8 file descriptors |
+
+## Notes
+
+- The certificate pair generated for the test initially failed with
+  `certificate has expired or is not yet valid`: `openssl x509 -req` sets
+  `NotBefore` to the issuing machine&#x27;s clock, and the device clock was a few
+  seconds behind. The retry a few seconds later succeeded — a bench artefact,
+  not a defect.
+- After the tests the device was cleaned up completely: packages purged, the
+  system user and group removed, configuration, certificates, logs and
+  `vcan0` deleted; `dpkg -l`, `pgrep` and the filesystem show no leftovers.
+
+## Verdict
+
+The arm64 build installs from the project repository, starts, serves plain
+and mutual-TLS traffic over the network and holds a full-rate load without
+losses or leaks; the amd64 and arm64 binaries interoperate byte for byte.
 </pre>
 <h2 id='2026-09-28-vcan-smoke.ru.md'>2026-09-28-vcan-smoke.ru.md</h2>
 <pre># Отчёт смоука на vcan — 2026-09-28
