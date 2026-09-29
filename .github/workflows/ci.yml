@@ -42,6 +42,11 @@ jobs:
           # PyPI (after its tag).
           repository: burn-lab-dev/cantcp-lib-python
           path: cantcp-lib-python
+      - uses: actions/checkout@v4
+        with:
+          # The Go client example for the interop check.
+          repository: burn-lab-dev/cantcp-lib-go
+          path: cantcp-lib-go
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26.x"
@@ -90,6 +95,7 @@ jobs:
           PY_MAIN: ${{ github.workspace }}/cantcp-lib-python/.venv/bin/python3
           PY_PYPI: ${{ github.workspace }}/pypi-venv/bin/python
           PY_CLIENT: ${{ github.workspace }}/cantcp-lib-python/examples/client.py
+          CANTCP_LIB_GO: ${{ github.workspace }}/cantcp-lib-go
         run: |
           scripts/vcan-smoke.sh --report artifacts \
             --python-client "main=$PY_MAIN $PY_CLIENT --host 127.0.0.1 --port 29536" \

@@ -297,7 +297,7 @@ fi
 # --- go client interop -----------------------------------------------------
 
 go_client=
-go_dir=$root/../cantcp-lib-go
+go_dir=${CANTCP_LIB_GO:-$root/../cantcp-lib-go}
 if [ -f "$go_dir/go.mod" ] && command -v go >/dev/null 2>&1; then
 	if (cd "$go_dir" && go build -o "$work/go-client" ./examples/client) >/dev/null 2>&1; then
 		go_client=$work/go-client
