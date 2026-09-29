@@ -52,7 +52,8 @@ curl -fsSL https://burn-lab-dev.github.io/cantcp/cantcp.gpg | gpg --show-keys
 - работает от системного пользователя `cantcp` с единственной capability
   `CAP_NET_RAW`;
 - изолирован: `ProtectSystem=strict`, `ProtectHome=yes`, `PrivateTmp=yes`,
-  `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_CAN`,
+  `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK AF_CAN`
+  (netlink нужен для получения индекса интерфейса),
   `NoNewPrivileges=yes`, `SystemCallFilter=@system-service @network-io`;
 - перезапускается при сбое (`Restart=always`, `RestartSec=2s`);
 - перечитывается по `systemctl reload cantcpd` (`ExecReload` посылает
