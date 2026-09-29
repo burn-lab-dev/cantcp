@@ -3,10 +3,10 @@ Version: 0.1.0
 Architecture: amd64
 Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
 Filename: pool/main/c/cantcp-cli/cantcp-cli_0.1.0_amd64.deb
-Size: 2349348
-MD5sum: 3d7481d3b4cc6501740397b6fe2154bb
-SHA1: 65dc3d5411f226e3c87745027d8cc44966504543
-SHA256: bca8052fe8aac804cea07e1b9f25e6fa1bbaeb94124b9b4a629b3910173336d9
+Size: 2349210
+MD5sum: 9ce7ba0b7f9fa89b6845a121272f41da
+SHA1: 90769955a43c2395ca8b28ffcb5252de4e2ab169
+SHA256: 28e710ce7cc340a8e242f9db839fa76d3b6c60b974bf52128173582974916d87
 Section: net
 Priority: optional
 Homepage: https://github.com/burn-lab-dev/cantcp
@@ -24,10 +24,10 @@ Architecture: amd64
 Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
 Depends: adduser
 Filename: pool/main/c/cantcpd/cantcpd_0.1.0_amd64.deb
-Size: 2416334
-MD5sum: 1cdc8e68b3eff11385aa6d07344eeeb5
-SHA1: d7325caa05ce93332ec30c5e0245ec53b17459f5
-SHA256: 8a51b0ef1e0e385f50329efdf343e4c1ad8275b53130276554d0a8305a934ed9
+Size: 2416492
+MD5sum: 79d7800e1f9d76c642e383c95a6700fb
+SHA1: 3a91327421ff3846dbe88032b0bde193690d0ade
+SHA256: d235b9898d7c330120396a6605385403e5fa7f7017f046f45f5433622d828870
 Section: net
 Priority: optional
 Homepage: https://github.com/burn-lab-dev/cantcp
