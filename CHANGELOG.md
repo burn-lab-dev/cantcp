@@ -13,6 +13,13 @@ v1.0.0 the command line, the configuration and the JSON API may change.
   sent by a client are broadcast to every client (including the sender), so
   gateway traffic is visible to all monitors, not only frames from other bus
   nodes. Found in the virtual-bus test run.
+- the packaged systemd unit allows `AF_NETLINK`: the daemon resolves the CAN
+  interface index with netlink, and the sandbox made the service exit at
+  startup. Found on the physical test bench.
+- the smoke scripts (`vcan-smoke.sh`, `hw-smoke.sh`) kill only the processes
+  they started (the previous `pkill -x` touched a user daemon and parallel
+  tests), take `--listen/--stats/--bin` and `--fd`, and compare the expected
+  frames instead of line counts.
 
 ## [0.1.0] - 2026-09-28
 
