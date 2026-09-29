@@ -1,12 +1,12 @@
 Package: cantcp-cli
-Version: 0.1.0
+Version: 0.1.1
 Architecture: amd64
 Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
-Filename: pool/main/c/cantcp-cli/cantcp-cli_0.1.0_amd64.deb
-Size: 2349210
-MD5sum: 9ce7ba0b7f9fa89b6845a121272f41da
-SHA1: 90769955a43c2395ca8b28ffcb5252de4e2ab169
-SHA256: 28e710ce7cc340a8e242f9db839fa76d3b6c60b974bf52128173582974916d87
+Filename: pool/main/c/cantcp-cli/cantcp-cli_0.1.1_amd64.deb
+Size: 2349394
+MD5sum: 2caf062c06d5e729082d055aee80104e
+SHA1: 18a818e6cf17f069f4bdb061771d94dd1eee4d45
+SHA256: d4f9dea6fc09734eb1edfa9bb80eeababc21a69663850a608f10e719c45aa597
 Section: net
 Priority: optional
 Homepage: https://github.com/burn-lab-dev/cantcp
@@ -19,15 +19,15 @@ Description: cantcp command-line client
  Developed by BURN-LAB: https://burn-lab.ru
 
 Package: cantcpd
-Version: 0.1.0
+Version: 0.1.1
 Architecture: amd64
 Maintainer: Stepanov Mikhail <stepanov.mikhail.y@gmail.com>
 Depends: adduser
-Filename: pool/main/c/cantcpd/cantcpd_0.1.0_amd64.deb
-Size: 2416492
-MD5sum: 79d7800e1f9d76c642e383c95a6700fb
-SHA1: 3a91327421ff3846dbe88032b0bde193690d0ade
-SHA256: d235b9898d7c330120396a6605385403e5fa7f7017f046f45f5433622d828870
+Filename: pool/main/c/cantcpd/cantcpd_0.1.1_amd64.deb
+Size: 2416490
+MD5sum: e665366b829adcadb841558727eac739
+SHA1: 03442477653fb6895bde12df67e734ccc53e57e2
+SHA256: 492f4575daee4386d3827a4c7303d6a46815a596a29ab872ec2b908d61a8a6ea
 Section: net
 Priority: optional
 Homepage: https://github.com/burn-lab-dev/cantcp
