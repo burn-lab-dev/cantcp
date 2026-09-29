@@ -39,6 +39,21 @@
 - `.deb`-пакеты для amd64, arm64 и armhf с ужесточённым systemd-юнитом и
   APT-репозиторий на GitHub Pages.
 
+## Свои клиенты
+
+Демон говорит на открытом потоке cantcp; свои инструменты можно строить на
+парных библиотеках:
+
+- Go — [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go)
+  (`examples/client`, `examples/tls`);
+- Python — [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python)
+  (`examples/client.py`, `examples/tls/`);
+- канон протокола (спецификация и общие векторы) —
+  [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec).
+
+Подробнее: [docs/SERVER.ru.md](docs/SERVER.ru.md#свои-клиенты) и
+[docs/CLI.ru.md](docs/CLI.ru.md#свой-клиент).
+
 ## Установка
 
 Из APT-репозитория (amd64, arm64, armhf):

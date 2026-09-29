@@ -145,6 +145,23 @@ cantcp-cli send --id 123 --data 01 \
 with a self-signed certificate and dangerous anywhere else. The client
 configuration file is described in [CONFIG.md](CONFIG.md).
 
+## Writing your own client
+
+`cantcp-cli` is only one client: the server speaks the open cantcp stream
+(see [PROTOCOL.md](PROTOCOL.md)), so your own tools can talk to it too. Use
+the companion libraries:
+
+- Go: [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go),
+  `examples/client`;
+- Python: [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python),
+  `examples/client.py`;
+- the protocol canon: [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec).
+
+Stream note for Python: wrap the socket with
+`socket.makefile("rb", buffering=0)` for reading (a buffered reader blocks
+until the requested size is filled) and `socket.makefile("wb")` with an
+explicit flush for writing.
+
 ## Environment and configuration file
 
 Every shared flag has a `CANTCP_*` environment variable

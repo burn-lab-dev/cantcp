@@ -74,9 +74,12 @@ scripts/hw-smoke.sh --a can0 --b can1 --bitrate 500000 --report /tmp/hw-report
 ```
 
 `--a` is served by `cantcpd`, `--b` is the observer/load adapter. The script
-repeats the matrix and a moderate load check on the real bus. Repeat at 125k,
-250k, 500k and 1M; for CAN FD-capable adapters also with FD data phase
-(500k/1M/2M/4M).
+repeats the matrix and a moderate load check on the real bus; classic frames
+only by default (`--fd` adds the FD set and needs MTU-72 adapters). Use
+`--bin /usr/bin` to test the installed packages instead of `bin/`, and
+`--listen`/`--stats` to avoid a running service on the default ports. Repeat
+at 125k, 250k, 500k and 1M; for CAN FD-capable adapters also with FD data
+phase (500k/1M/2M/4M).
 
 Hardware results are committed to [docs/test-reports](docs/test-reports/) and
 mirrored to the GitHub Pages site.

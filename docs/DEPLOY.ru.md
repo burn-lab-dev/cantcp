@@ -143,8 +143,14 @@ APT-репозиторий (`APT_GPG_KEY` — приватный ключ в ASC
 ## USB-адаптеры CAN и виртуальные шины
 
 ```sh
-# Реальное железо (драйверы SocketCAN в ядре).
+# Реальное железо: витая пара с терминаторами 120 Ом на обоих концах.
+# Классический CAN:
 sudo ip link set can0 up type can bitrate 500000
+# Адаптеры с CAN FD (арбитраж 500k, data phase 2M):
+sudo ip link set can0 up type can bitrate 500000 dbitrate 2000000 fd on
+# Проверка, что шина жива (can-utils):
+candump can0 &
+cansend can0 123#1122334455667788
 
 # Виртуальная шина: тесты без устройства.
 sudo modprobe vcan
@@ -152,6 +158,11 @@ sudo ip link add dev vcan0 type vcan
 sudo ip link set vcan0 mtu 72     # CAN FD (классический CAN — MTU 16)
 sudo ip link set up vcan0
 ```
+
+Молчащий интерфейс означает проблему с проводкой или терминаторами;
+`ip -details link show can0` показывает состояние, битрейт и счётчики
+ошибок. `scripts/hw-smoke.sh` (см. [TESTING.ru.md](../TESTING.ru.md))
+повторяет матрицу кадров на шине.
 
 Быстрая проверка после установки:
 
