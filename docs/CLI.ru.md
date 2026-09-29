@@ -145,6 +145,23 @@ cantcp-cli send --id 123 --data 01 \
 самоподписанным сертификатом и опасно где-либо ещё. Конфигурационный файл
 клиента описан в [CONFIG.ru.md](CONFIG.ru.md).
 
+## Свой клиент
+
+`cantcp-cli` — лишь один клиент: сервер говорит на открытом потоке cantcp
+(см. [PROTOCOL.ru.md](PROTOCOL.ru.md)), поэтому с ним могут работать и ваши
+инструменты. Используйте парные библиотеки:
+
+- Go: [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go),
+  `examples/client`;
+- Python: [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python),
+  `examples/client.py`;
+- канон протокола: [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec).
+
+Замечание про потоки в Python: оборачивайте сокет через
+`socket.makefile("rb", buffering=0)` для чтения (буферизованный reader ждёт
+заполнения запрошенного размера) и `socket.makefile("wb")` с явным flush
+для записи.
+
 ## Окружение и файл конфигурации
 
 У каждого общего флага есть переменная `CANTCP_*` (`CANTCP_SERVER`,

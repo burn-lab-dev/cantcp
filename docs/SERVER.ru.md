@@ -101,6 +101,23 @@ Payload кадров не логируется никогда; уровень de
 соединений, трассировочный уровень библиотеки демон не использует. Для
 journald удобен текст, для сборщиков — JSON.
 
+## Свои клиенты
+
+`cantcp-cli` — лишь один из клиентов: демон говорит на открытом потоке
+кадров cantcp, поэтому с ним может работать любой инструмент, следующий
+канону. Для своих клиентов и сервисов используйте парные библиотеки:
+
+- **Go:** [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go) —
+  `examples/client` это полный клиент listen/send с фильтрами и TLS/mTLS;
+- **Python:** [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python)
+  — `examples/client.py` делает то же через `ssl.SSLContext`;
+- **канон:** [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec) —
+  спецификация и общие тестовые векторы, которые воспроизводит каждая
+  реализация.
+
+TLS-материалы и флаги клиента: [TLS.ru.md](TLS.ru.md),
+[TLS-KEYS.ru.md](TLS-KEYS.ru.md) и [CLI.ru.md](CLI.ru.md).
+
 ## Развёртывание
 
 Пакет ставит `/usr/bin/cantcpd`, конфигурацию `/etc/cantcp/cantcpd.json`,

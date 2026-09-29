@@ -37,6 +37,21 @@ development: Linux, drivers, CAN and industrial telemetry.
 - `.deb` packages for amd64, arm64 and armhf with a hardened systemd unit,
   plus an APT repository on GitHub Pages.
 
+## Custom clients
+
+The daemon speaks the open cantcp stream; your own tools can talk to it with
+the companion libraries:
+
+- Go — [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go)
+  (`examples/client`, `examples/tls`);
+- Python — [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python)
+  (`examples/client.py`, `examples/tls/`);
+- the protocol canon (specification and shared test vectors) —
+  [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec).
+
+See [docs/SERVER.md](docs/SERVER.md#custom-clients) and
+[docs/CLI.md](docs/CLI.md#writing-your-own-client).
+
 ## Installation
 
 From the APT repository (amd64, arm64, armhf):

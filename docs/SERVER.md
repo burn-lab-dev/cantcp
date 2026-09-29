@@ -101,6 +101,24 @@ never logged; the debug level adds connection events, the trace level of the
 library is not used by the daemon. For journald keep the text format, for
 collectors use JSON.
 
+## Custom clients
+
+`cantcp-cli` is one client of many: the daemon speaks the open cantcp frame
+stream, so any tool that follows the canon can talk to it. For your own
+clients and services use the companion libraries:
+
+- **Go:** [cantcp-lib-go](https://github.com/burn-lab-dev/cantcp-lib-go) —
+  `examples/client` is a complete listen/send client with filtering and
+  TLS/mTLS;
+- **Python:** [cantcp-lib-python](https://github.com/burn-lab-dev/cantcp-lib-python)
+  — `examples/client.py` does the same over `ssl.SSLContext`;
+- **canon:** [cantcp-spec](https://github.com/burn-lab-dev/cantcp-spec) —
+  the specification and the shared test vectors every implementation
+  reproduces.
+
+Client-side TLS material and flags: [TLS.md](TLS.md),
+[TLS-KEYS.md](TLS-KEYS.md) and [CLI.md](CLI.md).
+
 ## Deployment
 
 The package installs `/usr/bin/cantcpd`, the configuration

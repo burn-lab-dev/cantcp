@@ -143,8 +143,14 @@ signed APT repository (`APT_GPG_KEY` holds the ASCII-armored private key,
 ## USB CAN adapters and virtual buses
 
 ```sh
-# Real hardware (SocketCAN drivers are in the kernel).
+# Real hardware: a twisted pair with 120 Ohm terminators at both ends.
+# Classic CAN:
 sudo ip link set can0 up type can bitrate 500000
+# CAN FD-capable adapters (arbitration 500k, data phase 2M):
+sudo ip link set can0 up type can bitrate 500000 dbitrate 2000000 fd on
+# Check that the bus works (can-utils):
+candump can0 &
+cansend can0 123#1122334455667788
 
 # Virtual bus: tests without a device.
 sudo modprobe vcan
@@ -152,6 +158,10 @@ sudo ip link add dev vcan0 type vcan
 sudo ip link set vcan0 mtu 72     # CAN FD (classic CAN uses MTU 16)
 sudo ip link set up vcan0
 ```
+
+A silent interface means wiring or termination; `ip -details link show can0`
+prints the state, the bitrate and the error counters. `scripts/hw-smoke.sh`
+(see [TESTING.md](../TESTING.md)) repeats the frame matrix on the bus.
 
 Quick smoke test after installation:
 
