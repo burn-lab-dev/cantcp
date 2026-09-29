@@ -15,8 +15,8 @@ a{color:#0366d6}
 <li><a href='#2026-09-29-soak.md'>2026-09-29-soak.md</a></li>
 <li><a href='#2026-09-29-hardware.ru.md'>2026-09-29-hardware.ru.md</a></li>
 <li><a href='#2026-09-29-hardware.md'>2026-09-29-hardware.md</a></li>
-<li><a href='#2026-09-29-arm-bpu2.ru.md'>2026-09-29-arm-bpu2.ru.md</a></li>
-<li><a href='#2026-09-29-arm-bpu2.md'>2026-09-29-arm-bpu2.md</a></li>
+<li><a href='#2026-09-29-arm.ru.md'>2026-09-29-arm.ru.md</a></li>
+<li><a href='#2026-09-29-arm.md'>2026-09-29-arm.md</a></li>
 <li><a href='#2026-09-28-vcan-smoke.ru.md'>2026-09-28-vcan-smoke.ru.md</a></li>
 <li><a href='#2026-09-28-vcan-smoke.md'>2026-09-28-vcan-smoke.md</a></li>
 </ul>
@@ -47,7 +47,7 @@ MTU или битрейт, таблицу проверок с результат
 |---|---|
 | [2026-09-28-vcan-smoke.ru.md](2026-09-28-vcan-smoke.ru.md) | виртуальная шина (vcan0, MTU 72), первый полный прогон |
 | [2026-09-29-hardware.ru.md](2026-09-29-hardware.ru.md) | два адаптера PCAN-USB, одна шина, 125k–1000k, пакетный сервис и APT-бинарники |
-| [2026-09-29-arm-bpu2.ru.md](2026-09-29-arm-bpu2.ru.md) | BPU2 (aarch64, Ubuntu 22.04), arm64-пакет из репозитория, vcan |
+| [2026-09-29-arm.ru.md](2026-09-29-arm.ru.md) | плата aarch64 (Ubuntu 22.04), arm64-пакет из репозитория, vcan |
 | [2026-09-29-soak.ru.md](2026-09-29-soak.ru.md) | 60-минутный soak на vcan0, контроль ресурсов и стабильности |
 </pre>
 <h2 id='README.md'>README.md</h2>
@@ -79,7 +79,7 @@ long.
 |---|---|
 | [2026-09-28-vcan-smoke.md](2026-09-28-vcan-smoke.md) | virtual bus (vcan0, MTU 72), first full run |
 | [2026-09-29-hardware.md](2026-09-29-hardware.md) | two PCAN-USB adapters, one bus, 125k–1000k, the packaged service and APT binaries |
-| [2026-09-29-arm-bpu2.md](2026-09-29-arm-bpu2.md) | BPU2 (aarch64, Ubuntu 22.04), arm64 package from the repository, vcan |
+| [2026-09-29-arm.md](2026-09-29-arm.md) | an aarch64 board (Ubuntu 22.04), arm64 package from the repository, vcan |
 | [2026-09-29-soak.md](2026-09-29-soak.md) | 60-minute soak on vcan0, resource and stability control |
 </pre>
 <h2 id='2026-09-29-soak.ru.md'>2026-09-29-soak.ru.md</h2>
@@ -376,23 +376,23 @@ same daemon over the network. The error-frame option is implemented and
 unit-tested; provoking real bus errors on this bench failed and is recorded
 as not reproduced.
 </pre>
-<h2 id='2026-09-29-arm-bpu2.ru.md'>2026-09-29-arm-bpu2.ru.md</h2>
+<h2 id='2026-09-29-arm.ru.md'>2026-09-29-arm.ru.md</h2>
 <pre># Отчёт по ARM — 2026-09-29
 
-[English](2026-09-29-arm-bpu2.md) | **Русский**
+[English](2026-09-29-arm.md) | **Русский**
 
 Разрабатывается **[BURN-LAB](https://burn-lab.ru)** — встраиваемый Linux:
 драйверы, CAN и промышленная телеметрия.
 
 ## Среда
 
-- устройство: **BPU2** (Orange Pi, `aarch64`), Ubuntu 22.04 (jammy), root по
-  ssh;
+- устройство: одноплатный компьютер `aarch64` под Ubuntu 22.04 (jammy),
+  доступ по ssh от root;
 - пакет: `cantcpd 0.1.0` / `cantcp-cli 0.1.0`, **arm64**, установлен из
   APT-репозитория проекта (`https://burn-lab-dev.github.io/cantcp`);
 - шина: `vcan0`, MTU 72;
 - клиент: рабочая станция amd64 с теми же APT-бинарниками, plain и TLS 1.3
-  по сети (172.30.9.191).
+  по локальной сети.
 
 ## Проверки
 
@@ -424,23 +424,23 @@ arm64-сборка ставится из репозитория проекта, 
 mutual-TLS трафик по сети и держит полную нагрузку без потерь и утечек;
 бинарники amd64 и arm64 совместимы побайтово.
 </pre>
-<h2 id='2026-09-29-arm-bpu2.md'>2026-09-29-arm-bpu2.md</h2>
+<h2 id='2026-09-29-arm.md'>2026-09-29-arm.md</h2>
 <pre># ARM smoke report — 2026-09-29
 
-**English** | [Русский](2026-09-29-arm-bpu2.ru.md)
+**English** | [Русский](2026-09-29-arm.ru.md)
 
 Developed by **[BURN-LAB](https://burn-lab.ru)** — embedded software
 development: Linux, drivers, CAN and industrial telemetry.
 
 ## Environment
 
-- device: **BPU2** (Orange Pi, `aarch64`), Ubuntu 22.04 (jammy), root over
-  ssh;
+- device: an `aarch64` single-board computer running Ubuntu 22.04 (jammy),
+  accessed over ssh as root;
 - package: `cantcpd 0.1.0` / `cantcp-cli 0.1.0`, **arm64**, installed from
   the project APT repository (`https://burn-lab-dev.github.io/cantcp`);
 - bus: `vcan0`, MTU 72;
-- client side: amd64 workstation with the same APT binaries, plain and
-  TLS 1.3 over the network (172.30.9.191).
+- client side: an amd64 workstation with the same APT binaries, plain and
+  TLS 1.3 over the local network.
 
 ## Checks
 
