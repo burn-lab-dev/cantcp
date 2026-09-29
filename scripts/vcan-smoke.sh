@@ -267,6 +267,35 @@ elif [ -z "$python_client" ]; then
 	record SKIP python-interop "no cantcp-lib-python virtualenv next to the checkout"
 fi
 
+# --- go client interop -----------------------------------------------------
+
+go_client=
+go_dir=$root/../cantcp-lib-go
+if [ -f "$go_dir/go.mod" ] && command -v go >/dev/null 2>&1; then
+	if (cd "$go_dir" && go build -o "$work/go-client" ./examples/client) >/dev/null 2>&1; then
+		go_client=$work/go-client
+	fi
+fi
+
+if [ -n "$go_client" ] && start_server; then
+	timeout 20 "$go_client" listen --server "$listen_addr" --id 2B0 --mask 7FF --count 1 --json \
+		>"$work/go-listen.json" 2>&1 &
+	listen_pid=$!
+	sleep 2
+	"$root/bin/cantcp-cli" send --server "$listen_addr" --id 2B0 --data F00D >/dev/null 2>&1
+	sleep 2
+	kill "$listen_pid" 2>/dev/null
+	listen_pid=
+	if grep -q '"data":"f00d"' "$work/go-listen.json" 2>/dev/null; then
+		record PASS go-interop "the Go client received a frame from the CLI"
+	else
+		record FAIL go-interop "the Go client did not receive the frame"
+	fi
+	stop_server
+elif [ -z "$go_client" ]; then
+	record SKIP go-interop "no cantcp-lib-go checkout or no Go toolchain"
+fi
+
 # --- rate limit ------------------------------------------------------------
 
 if start_server --max-frames-per-second 10; then
