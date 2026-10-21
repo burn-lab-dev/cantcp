@@ -7,12 +7,24 @@ v1.0.0 the command line, the configuration and the JSON API may change.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-21
+
 ### Fixed
 
 - the smoke scripts (`vcan-smoke.sh`, `hw-smoke.sh`) kill only the processes
   they started (the previous `pkill -x` touched a user daemon and parallel
   tests), take `--listen/--stats/--bin` and `--fd`, and compare the expected
   frames instead of line counts.
+
+### Security
+
+- the binaries are built with Go 1.26.10: the previous releases carried
+  GO-2026-6809 (`crypto/x509`, "distrust compromised intermediate
+  certificates"), which is reachable from the TLS client path. The CI
+  vulnerability gate and the release build are now pinned to a patched
+  toolchain instead of a floating `1.26.x`, which was served from the runner
+  toolcache and kept reporting advisories that were already fixed upstream;
+  `govulncheck` is pinned as well.
 
 ## [0.1.1] - 2026-09-29
 
