@@ -154,10 +154,11 @@ jobs:
           # Pinned to the patch release with the current stdlib security
           # fixes: a floating "1.26.x" is served from the runner toolcache
           # and keeps reporting advisories that are already fixed upstream
-          # (GO-2026-6809 needs 1.26.10). Bump the pin when govulncheck
-          # names a newer "Fixed in" version. The test matrix stays floating
-          # on purpose: compatibility is checked against the latest patches.
-          go-version: "1.26.10"
+          # (GO-2026-6859, CVE-2026-97054, needs 1.26.11). Bump the pin when
+          # govulncheck names a newer "Fixed in" version. The test matrix
+          # stays floating on purpose: compatibility is checked against the
+          # latest patches.
+          go-version: "1.26.11"
           cache: true
       - name: govulncheck
         # Pinned as well: the vulnerability database is always current, while
