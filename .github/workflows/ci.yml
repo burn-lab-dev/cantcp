@@ -19,8 +19,8 @@ jobs:
       matrix:
         go: ["1.24.x", "1.25.x", "1.26.x"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go }}
           cache: true
@@ -34,25 +34,28 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           # The Python client for the interop checks: the library checkout
           # (before its tag) is built below; the released package comes from
           # PyPI (after its tag).
           repository: burn-lab-dev/cantcp-lib-python
           path: cantcp-lib-python
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The Go client example for the interop check.
           repository: burn-lab-dev/cantcp-lib-go
           path: cantcp-lib-go
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           cache: true
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
+          # Pinned: a floating uv would change between the daily runs. Keep it
+          # in sync with cantcp-lib-python.
+          version: "0.13.7"
           python-version: "3.12"
           enable-cache: true
       - name: Install can-utils
@@ -102,7 +105,7 @@ jobs:
             --python-client "pypi=$PY_PYPI $PY_CLIENT --host 127.0.0.1 --port 29536"
       - name: Upload the smoke report
         if: ${{ always() && env.VCAN_OK == '1' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vcan-smoke-report
           path: artifacts/
@@ -113,8 +116,8 @@ jobs:
   cross:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           cache: true
@@ -126,8 +129,8 @@ jobs:
   canon:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           cache: true
@@ -145,8 +148,8 @@ jobs:
   vuln:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           # Pinned to the patch release with the current stdlib security
           # fixes: a floating "1.26.x" is served from the runner toolcache
@@ -165,8 +168,8 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26.x"
           cache: true

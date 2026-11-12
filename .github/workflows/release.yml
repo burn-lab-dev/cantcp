@@ -11,10 +11,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           # The shipped binaries must be built with a patched toolchain:
           # keep the pin in sync with the vuln job in ci.yml.
@@ -50,7 +50,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download the .deb assets of the release
         env:
           GH_TOKEN: ${{ github.token }}
