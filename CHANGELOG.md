@@ -7,6 +7,18 @@ v1.0.0 the command line, the configuration and the JSON API may change.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-12
+
+### Security
+
+- the binaries are built with Go 1.26.11, which fixes GO-2026-6859
+  (CVE-2026-97054) in `net/http`: the `Connection: close` header that
+  `MaxBytesReader` sets when the limit is exceeded races with a header set by
+  the handler, and an HTTP/1 server can crash with a runtime panic. `cantcpd`
+  does not use `MaxBytesReader` or `MaxBytesHandler`, so the reported path is
+  symbolic; the release build and the CI vulnerability gate now share the
+  patched pin.
+
 ## [0.1.2] - 2026-10-21
 
 ### Fixed
